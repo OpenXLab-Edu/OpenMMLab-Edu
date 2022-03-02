@@ -8,9 +8,10 @@ model = dict(
         loss=dict(type='CrossEntropyLoss', loss_weight=1.0),
     ))
 # dataset settings
-dataset_type = 'MNIST'
-img_norm_cfg = dict(mean=[33.46], std=[78.87], to_rgb=True)
+dataset_type = 'ImageNet'
+img_norm_cfg = dict(mean=[33.46], std=[78.87], to_rgb=False)
 train_pipeline = [
+    dict(type='LoadImageFromFile',color_type='grayscale'),
     dict(type='Resize', size=32),
     dict(type='Normalize', **img_norm_cfg),
     dict(type='ImageToTensor', keys=['img']),
@@ -18,6 +19,7 @@ train_pipeline = [
     dict(type='Collect', keys=['img', 'gt_label']),
 ]
 test_pipeline = [
+    dict(type='LoadImageFromFile',color_type='grayscale'),
     dict(type='Resize', size=32),
     dict(type='Normalize', **img_norm_cfg),
     dict(type='ImageToTensor', keys=['img']),
