@@ -17,10 +17,8 @@ class MMClassification:
         # dataset_type = 'ImageNet'
         ):
 
-        # self.backbone = backbone
-        # 默认的config和checkpoints后续改为ResNet
-        self.config = './utils/moodels/ResNet/ResNet50.py'
-        self.checkpoint = './utils/moodels/ResNet/ResNet50.pth'
+        self.config = './utils/models/ResNet/ResNet50.py'
+        self.checkpoint = './utils/models/ResNet/ResNet50.pth'
 
         self.backbone = backbone
         backbone_path = os.path.join('./utils/models', self.backbone)
@@ -45,8 +43,6 @@ class MMClassification:
         }
 
         self.num_classes = num_classes
-        # print(self.num_classes,"==================================\n")
-        # self.dataset_type = dataset_type
 
 
     def train(self, random_seed=0, save_fold='./checkpoints', distributed=False, validate=True, device="cpu",
