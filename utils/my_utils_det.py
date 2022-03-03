@@ -1,10 +1,11 @@
 import mmcv
 import os.path as osp
 from mmcv import Config
-from mmdet.apis import inference_detector, init_detector, show_result_pyplot, train_model
+from mmdet.apis import inference_detector, init_detector, show_result_pyplot, train_detector
 from mmdet.models import build_detector
 from mmdet.datasets import build_dataset
 from mmcv.runner import load_checkpoint
+import time
 import os
 '''
 TODO:
@@ -16,8 +17,7 @@ TODO:
 class MMDetection:
     def __init__(self, 
         backbone='FasterRCNN',
-        num_classes=-1
-        # dataset_type = 'ImageNet'
+        dataset_path = None
         ):
 
         self.config = './utils/models/FasterRCNN/FasterRCNN.py'
@@ -36,30 +36,25 @@ class MMDetection:
 
         self.cfg = Config.fromfile(self.config)
 
-        self.dataset_path = None
+        self.dataset_path = dataset_path
         self.lr = None
         self.backbonedict = {
-            "FasterRCNN": './utils/models/MobileNet/MobileNet.py',
+            "FasterRCNN": './utils/models/FasterRCNN/FasterRCNN.py',
             "Yolov3": './utils/models/ResNet/ResNet50.py',
             # 下略
         }
 
-        self.num_classes = num_classes
         return None
 
 
-    def train(self, random_seed=0, save_fold='./checkpoints', distributed=False, validate=True, device="cpu",
+    def train(self, random_seed=0, save_fold='./checkpoints', distributed=False, validate=True,
               metric='mAP', optimizer="SGD", epochs=100, lr=0.001, weight_decay=0.001, Frozen_stages=1):# 加config
 
         self.cfg = Config.fromfile(self.backbonedict[self.backbone])
 
         self.cfg.model.backbone.frozen_stages = Frozen_stages
 
-        if self.num_classes != -1:
-            if 'num_classes' in self.cfg.model.backbone.keys():
-                self.cfg.model.backbone.num_classes = self.num_classes
-            else:
-                self.cfg.model.head.num_classes = self.num_classes
+        print("==================",self.cfg)
 
         self.load_dataset(self.dataset_path)
         print("进行了cfg的切换")
@@ -68,20 +63,13 @@ class MMDetection:
         # 创建工作目录
         mmcv.mkdir_or_exist(osp.abspath(self.cfg.work_dir))
         # 创建分类器
-        model = build_detector(self.cfg.model)
+        datasets = [build_dataset(self.cfg.data.train)]
+        model = build_detector(self.cfg.model,  train_cfg=self.cfg.get('train_cfg'), test_cfg=self.cfg.get('test_cfg'))
         model.init_weights()
 
-        datasets = [build_dataset(self.cfg.data.train)]
 
-        # 添加类别属性以方便可视化
-        model.CLASSES = datasets[0].CLASSES
-
-        n_class = len(model.CLASSES) 
-        if n_class <= 5:
-            self.cfg.evaluation.metric_options = {'topk': (1,)}
-        else:
-            self.cfg.evaluation.metric_options = {'topk': (5,)}
-
+        
+        # print("--------------------",self.cfg.model.get('train_cfg'),self.cfg.data.train)
         # 根据输入参数更新config文件
         self.cfg.optimizer.lr = lr  # 学习率
         self.cfg.optimizer.type = optimizer  # 优化器
@@ -90,19 +78,18 @@ class MMDetection:
         self.cfg.runner.max_epochs = epochs  # 最大的训练轮次
 
         # 设置每 5 个训练批次输出一次日志
-        self.cfg.log_config.interval = 1
+        # self.cfg.log_config.interval = 1
         self.cfg.gpu_ids = range(1)
 
         self.cfg.seed = random_seed
 
-        train_model(
+        train_detector(
             model,
             datasets,
             self.cfg,
             distributed=distributed,
             validate=validate,
             timestamp=time.strftime('%Y%m%d_%H%M%S', time.localtime()),
-            device=device,
             meta=dict()
         )
 
@@ -112,7 +99,8 @@ class MMDetection:
     def inference(self, device='cpu',
                  pretrain_model = './checkpoints/latest.pth',
                  is_trained=False,
-                infer_data=None, show=True, iou_threshold=0.9):
+                infer_data=None, show=True, iou_threshold=0.9,
+                work_dir=None):
         print("========= begin inference ==========")
         model_fold = self.cfg.work_dir
         
@@ -127,21 +115,17 @@ class MMDetection:
         return result
 
 
-    def load_dataset(self, path, dataset_type=='CocoDataset'):
+    def load_dataset(self, path):
 
-        self.dataset_type = dataset_type
         self.dataset_path = path
 
         #数据集修正为coco格式
 
-        self.cfg.data.train.data_prefix = path + '/training_set/training_set'
-        self.cfg.data.train.classes = path + '/classes.txt'
-        # self.cfg.data.train.ann_file = path + '/train.txt'
+        self.cfg.data.train.img_prefix = path + 'images/train/'
+        self.cfg.data.train.ann_file = path + 'annotations/train.json'
 
-        self.cfg.data.val.data_prefix = path + '/val_set/val_set'
-        self.cfg.data.val.ann_file = path + '/val.txt'
-        self.cfg.data.val.classes = path + '/classes.txt'
+        self.cfg.data.val.img_prefix = path + 'images/test/'
+        self.cfg.data.val.ann_file = path + 'annotations/valid.json'
 
-        self.cfg.data.test.data_prefix = path + '/test_set/test_set'
-        self.cfg.data.test.ann_file = path + '/test.txt'
-        self.cfg.data.test.classes = path + '/classes.txt'
+        self.cfg.data.test.img_prefix = path + 'images/test/'
+        self.cfg.data.test.ann_file = path + 'annotations/valid.json'
