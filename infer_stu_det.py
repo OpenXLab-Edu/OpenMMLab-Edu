@@ -18,13 +18,10 @@ def test2():
 
 
 def test3():
-	model = MMDetection(backbone='Faster-RCNN')
-	model.num_classes = 2
-	model.load_dataset(path='data/', dataset_type='coco')
-	model.train(epochs=1, device='cuda:0', validate=False, Frozen_stages=1)
-	model.inference(is_trained=True, pretrain_model = './checkpoints/latest.pth',
-        infer_data='./data/ImageNet/test_set/test_set/cats/cat.4003.jpg', 
-        neck_iou_threshold=0.99, backbone_iou_threshold=0.99)
+	model = MMDetection(backbone='FasterRCNN',dataset_path='data/coco/')
+	model.load_dataset(path='data/coco/')
+	model.train(epochs=1, validate=False, Frozen_stages=1)
+	model.inference(is_trained=True, pretrain_model = './checkpoints/latest.pth',infer_data='./data/coco/images/train/000000000400.jpg', iou_threshold=0.01)
 
 
 if __name__ == "__main__":
