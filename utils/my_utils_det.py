@@ -48,7 +48,7 @@ class MMDetection:
 
 
     def train(self, random_seed=0, save_fold='./checkpoints', distributed=False, validate=True,
-              metric='mAP', optimizer="SGD", epochs=100, lr=0.001, weight_decay=0.001, Frozen_stages=1):# 加config
+              metric='bbox', optimizer="SGD", epochs=100, lr=0.001, weight_decay=0.001, Frozen_stages=1):# 加config
 
         self.cfg = Config.fromfile(self.backbonedict[self.backbone])
 
@@ -67,7 +67,7 @@ class MMDetection:
         model = build_detector(self.cfg.model,  train_cfg=self.cfg.get('train_cfg'), test_cfg=self.cfg.get('test_cfg'))
         model.init_weights()
 
-
+        #self.model.CLASSES=['car']
         
         # print("--------------------",self.cfg.model.get('train_cfg'),self.cfg.data.train)
         # 根据输入参数更新config文件
@@ -103,12 +103,16 @@ class MMDetection:
                 work_dir=None):
         print("========= begin inference ==========")
         model_fold = self.cfg.work_dir
+
+        self.cfg.model.test_cfg.rpn.iou_threshold = iou_threshold
+        self.cfg.model.test_cfg.rcnn.iou_threshold = iou_threshold
         
         img_array = mmcv.imread(infer_data)
         checkpoint = self.checkpoint
         if is_trained:
             checkpoint = pretrain_model
         model = init_detector(self.cfg, checkpoint, device=device)
+        model.CLASSES = ['xdfbxdf']
         result = inference_detector(model, img_array) # 此处的model和外面的无关,纯局部变量
         if show == True:
             show_result_pyplot(model, infer_data, result)
@@ -129,3 +133,6 @@ class MMDetection:
 
         self.cfg.data.test.img_prefix = path + 'images/test/'
         self.cfg.data.test.ann_file = path + 'annotations/valid.json'
+
+        
+       

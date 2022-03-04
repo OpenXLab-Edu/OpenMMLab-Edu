@@ -75,7 +75,7 @@ model = dict(
         rpn_proposal=dict(
             nms_pre=2000,                                                       # 产生2000个 NMS后1000个 选取256个
             max_per_img=1000,
-            nms=dict(type='nms', iou_threshold=0.7),
+            nms=dict(type='nms', iou_threshold=0.1),
             min_bbox_size=0),
         rcnn=dict(
             assigner=dict(
@@ -97,11 +97,11 @@ model = dict(
         rpn=dict(
             nms_pre=1000,
             max_per_img=1000,
-            nms=dict(type='nms', iou_threshold=0.7),
+            nms=dict(type='nms', iou_threshold=0.1),
             min_bbox_size=0),
         rcnn=dict(
             score_thr=0.05,
-            nms=dict(type='nms', iou_threshold=0.5),
+            nms=dict(type='nms', iou_threshold=0.05),
             max_per_img=100)
         # soft-nms is also supported for rcnn testing
         # e.g., nms=dict(type='soft_nms', iou_threshold=0.5, min_score=0.05)
@@ -138,7 +138,7 @@ test_pipeline = [
         ])
 ]
 data = dict(
-    samples_per_gpu=2,
+    samples_per_gpu=1,
     workers_per_gpu=2,
     train=dict(
         type=dataset_type,
