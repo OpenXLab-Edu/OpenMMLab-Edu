@@ -20,9 +20,10 @@ def test2():
 
 def test3():
 	model = MMDetection(backbone='FasterRCNN',dataset_path='data/coco/')
+	model.num_classes = 1
 	model.load_dataset(path='data/coco/')
-	# model.train(epochs=15, validate=True, Frozen_stages=1)
-	model.inference(is_trained=True, pretrain_model = './checkpoints/latest.pth',infer_data='./data/coco/images/test/0001.jpg', iou_threshold=0.3)
+	model.train(epochs=15, validate=True, Frozen_stages=1,save_fold="checkpoints/det_plate/")
+	model.inference(is_trained=True, pretrain_model = './checkpoints/det_plate/latest.pth',infer_data='./data/coco/images/test/0001.jpg', iou_threshold=0.3)
 
 
 if __name__ == "__main__":
