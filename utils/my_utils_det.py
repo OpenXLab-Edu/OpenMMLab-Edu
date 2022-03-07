@@ -17,6 +17,7 @@ TODO:
 class MMDetection:
     def __init__(self, 
         backbone='FasterRCNN',
+        num_classes=-1,
         dataset_path = None
         ):
 
@@ -43,6 +44,7 @@ class MMDetection:
             "Yolov3": './utils/models/ResNet/ResNet50.py',
             # 下略
         }
+        self.num_classes = -1
 
         return None
 
@@ -52,7 +54,15 @@ class MMDetection:
 
         self.cfg = Config.fromfile(self.backbonedict[self.backbone])
 
+        self.cfg.classes = ('plate')
+        self.cfg.data.train.classes = self.cfg.classes
+        self.cfg.data.test.classes = self.cfg.classes
+        self.cfg.data.val.classes = self.cfg.classes
+
         self.cfg.model.backbone.frozen_stages = Frozen_stages
+
+        if self.num_classes != -1:
+            self.cfg.model.roi_head.bbox_head.num_classes = self.num_classes
 
         self.load_dataset(self.dataset_path)
         print("进行了cfg的切换")
@@ -102,6 +112,9 @@ class MMDetection:
         print("========= begin inference ==========")
         model_fold = self.cfg.work_dir
 
+        if self.num_classes != -1:
+            self.cfg.model.roi_head.bbox_head.num_classes = self.num_classes
+            
         self.cfg.model.test_cfg.rpn.iou_threshold = iou_threshold
         self.cfg.model.test_cfg.rcnn.iou_threshold = iou_threshold
         
