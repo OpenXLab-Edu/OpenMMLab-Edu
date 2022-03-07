@@ -116,7 +116,11 @@ class MMClassification:
                 image=None, show=True):
         print("========= begin inference ==========")
         model_fold = self.cfg.work_dir
-        
+        if self.num_classes != -1:
+            if 'num_classes' in self.cfg.model.backbone.keys():
+                self.cfg.model.backbone.num_classes = self.num_classes
+            else:
+                self.cfg.model.head.num_classes = self.num_classes
         img_array = mmcv.imread(image)
         checkpoint = self.checkpoint
         if is_trained:

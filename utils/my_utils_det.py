@@ -54,8 +54,6 @@ class MMDetection:
 
         self.cfg.model.backbone.frozen_stages = Frozen_stages
 
-        print("==================",self.cfg)
-
         self.load_dataset(self.dataset_path)
         print("进行了cfg的切换")
             # 进行
@@ -112,7 +110,8 @@ class MMDetection:
         if is_trained:
             checkpoint = pretrain_model
         model = init_detector(self.cfg, checkpoint, device=device)
-        model.CLASSES = ['xdfbxdf']
+        print(model)
+        model.CLASSES = ['plate']
         result = inference_detector(model, img_array) # 此处的model和外面的无关,纯局部变量
         if show == True:
             show_result_pyplot(model, infer_data, result)
