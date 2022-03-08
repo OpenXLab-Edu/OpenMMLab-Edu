@@ -7,6 +7,7 @@ from mmdet.datasets import build_dataset
 from mmcv.runner import load_checkpoint
 import time
 import os
+import json
 '''
 TODO:
     1.数据集格式coco,路径修正
@@ -44,7 +45,7 @@ class MMDetection:
             "Yolov3": './utils/models/ResNet/ResNet50.py',
             # 下略
         }
-        self.num_classes = -1
+        self.num_classes = num_classes
 
         return None
 
@@ -52,12 +53,8 @@ class MMDetection:
     def train(self, random_seed=0, save_fold='./checkpoints', distributed=False, validate=True,
               metric='bbox', optimizer="SGD", epochs=100, lr=0.001, weight_decay=0.001, Frozen_stages=1):# 加config
 
+        # 加载网络模型的配置文件
         self.cfg = Config.fromfile(self.backbonedict[self.backbone])
-
-        self.cfg.classes = ('plate')
-        self.cfg.data.train.classes = self.cfg.classes
-        self.cfg.data.test.classes = self.cfg.classes
-        self.cfg.data.val.classes = self.cfg.classes
 
         self.cfg.model.backbone.frozen_stages = Frozen_stages
 
@@ -65,8 +62,16 @@ class MMDetection:
             self.cfg.model.roi_head.bbox_head.num_classes = self.num_classes
 
         self.load_dataset(self.dataset_path)
+
+        # 添加需要进行检测的类名
+        self.cfg.classes = self.get_classes(self.cfg.data.train.ann_file)
+        # 分别为训练、测试、验证添加类名
+        self.cfg.data.train.classes = self.cfg.classes
+        self.cfg.data.test.classes = self.cfg.classes
+        self.cfg.data.val.classes = self.cfg.classes
+
         print("进行了cfg的切换")
-            # 进行
+        # 进行
         self.cfg.work_dir = save_fold
         # 创建工作目录
         mmcv.mkdir_or_exist(osp.abspath(self.cfg.work_dir))
@@ -107,24 +112,31 @@ class MMDetection:
     def inference(self, device='cpu',
                  pretrain_model = './checkpoints/latest.pth',
                  is_trained=False,
-                infer_data=None, show=True, iou_threshold=0.9,
-                work_dir=None):
+                 infer_data=None, show=True, iou_threshold=0.9,
+                 work_dir=None):
         print("========= begin inference ==========")
         model_fold = self.cfg.work_dir
 
         if self.num_classes != -1:
             self.cfg.model.roi_head.bbox_head.num_classes = self.num_classes
-            
+
         self.cfg.model.test_cfg.rpn.iou_threshold = iou_threshold
         self.cfg.model.test_cfg.rcnn.iou_threshold = iou_threshold
-        
+
+        # 加载数据集及配置文件的路径
+        self.load_dataset(self.dataset_path)
+        # 修正检测的目标
+        self.cfg.classes = self.get_classes(self.cfg.data.train.ann_file)
+        self.cfg.data.train.classes = self.cfg.classes
+        self.cfg.data.test.classes = self.cfg.classes
+        self.cfg.data.val.classes = self.cfg.classes
+
         img_array = mmcv.imread(infer_data)
         checkpoint = self.checkpoint
         if is_trained:
             checkpoint = pretrain_model
         model = init_detector(self.cfg, checkpoint, device=device)
-        print(model)
-        model.CLASSES = ['plate']
+        model.CLASSES = self.cfg.classes
         result = inference_detector(model, img_array) # 此处的model和外面的无关,纯局部变量
         if show == True:
             show_result_pyplot(model, infer_data, result)
@@ -145,6 +157,18 @@ class MMDetection:
 
         self.cfg.data.test.img_prefix = path + 'images/test/'
         self.cfg.data.test.ann_file = path + 'annotations/valid.json'
+
+
+    def get_classes(annotation_file):
+        classes = ()
+        with open(annotation_file, 'r') as f:
+            dataset = json.load(f)
+            categories = dataset["categories"]
+            print(categories)
+            if 'categories' in dataset:
+                for cat in dataset['categories']:
+                    classes = classes + (cat['name'],)
+        return classes
 
         
        
