@@ -111,9 +111,9 @@ class MMClassification:
         )
         
     def inference(self, device='cpu',
-                 pretrain_model = './checkpoints/latest.pth',
-                 is_trained=False,
-                image=None, show=True):
+                  pretrain_model = './checkpoints/latest.pth',
+                  is_trained=False,
+                  image=None, show=True):
         print("========= begin inference ==========")
         model_fold = self.cfg.work_dir
         if self.num_classes != -1:
