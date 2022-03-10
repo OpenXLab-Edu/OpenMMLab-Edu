@@ -1,4 +1,3 @@
-from turtle import Turtle
 import mmcv
 import os.path as osp
 from mmcv import Config
@@ -17,8 +16,8 @@ class MMClassification:
         # dataset_type = 'ImageNet'
         ):
 
-        self.config = './utils/models/ResNet/ResNet50.py'
-        self.checkpoint = './utils/models/ResNet/ResNet50.pth'
+        self.config = './utils/models/MobileNet/MobileNet.py'
+        self.checkpoint = './utils/models/MobileNet/MobileNet.pth'
 
         self.backbone = backbone
         backbone_path = os.path.join('./utils/models', self.backbone)
@@ -43,15 +42,17 @@ class MMClassification:
         }
 
         self.num_classes = num_classes
-
+        self.save = None
 
     def train(self, random_seed=0, save_fold='./checkpoints', distributed=False, validate=True, device="cpu",
-              metric='accuracy', optimizer="SGD", epochs=100, lr=0.001, weight_decay=0.001):# 加config
+              metric='accuracy', optimizer="SGD", epochs=100, lr=0.001, weight_decay=0.001,
+              checkpoint='./checkpoints/latest.pth'):# 加config
 
         # 获取config信息
 
         self.cfg = Config.fromfile(self.backbonedict[self.backbone])
-
+        if self.save is not None:
+            save_fold = self.save
         # print(self.cfg.model.backbone.keys())
         '''for lenet mnist, model.head
         for MobileNet, model.backbone
@@ -73,14 +74,17 @@ class MMClassification:
         mmcv.mkdir_or_exist(osp.abspath(self.cfg.work_dir))
         # 创建分类器
         model = build_classifier(self.cfg.model)
-        model.init_weights()
+        if not checkpoint:
+            model.init_weights()
+        else:
+            load_checkpoint(model, checkpoint)
+            # model = init_model(self.cfg, checkpoint)
 
         datasets = [build_dataset(self.cfg.data.train)]
-
         # 添加类别属性以方便可视化
         model.CLASSES = datasets[0].CLASSES
 
-        n_class = len(model.CLASSES) 
+        n_class = len(model.CLASSES)
         if n_class <= 5:
             self.cfg.evaluation.metric_options = {'topk': (1,)}
         else:
@@ -111,12 +115,16 @@ class MMClassification:
         )
         
     def inference(self, device='cpu',
-                 pretrain_model = './checkpoints/latest.pth',
+                 pretrain_model='./checkpoints/latest.pth',
                  is_trained=False,
                 image=None, show=True):
         print("========= begin inference ==========")
         model_fold = self.cfg.work_dir
-        
+        if self.num_classes != -1:
+            if 'num_classes' in self.cfg.model.backbone.keys():
+                self.cfg.model.backbone.num_classes = self.num_classes
+            else:
+                self.cfg.model.head.num_classes = self.num_classes
         img_array = mmcv.imread(image)
         checkpoint = self.checkpoint
         if is_trained:
@@ -165,3 +173,4 @@ class MMClassification:
 #     result = model.inference(image=img)
 #     print(result)
 #     show_result_pyplot(model.SOTA_model, img, result)
+
