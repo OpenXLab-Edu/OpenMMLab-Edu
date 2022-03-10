@@ -39,3 +39,4 @@ if __name__ == "__main__":
 	# simple_train_demo()
 	# normal_train_demo()
 	continue_train_demo()
+	print(55555555)
