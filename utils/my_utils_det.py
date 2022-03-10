@@ -141,15 +141,15 @@ class MMDetection:
         self.dataset_path = path
 
         #数据集修正为coco格式
-        self.cfg.data.train.img_prefix = os.path.join(path, 'images/train/')
+        self.cfg.data.train.img_prefix = os.path.join(self.dataset_path, 'images/train/')
         print(self.cfg.data.train.img_prefix)
-        self.cfg.data.train.ann_file = os.path.join(path, 'annotations/train.json')
+        self.cfg.data.train.ann_file = os.path.join(self.dataset_path, 'annotations/train.json')
 
-        self.cfg.data.val.img_prefix = os.path.join(path, 'images/test/')
-        self.cfg.data.val.ann_file = os.path.join(path, 'annotations/valid.json')
+        self.cfg.data.val.img_prefix = os.path.join(self.dataset_path, 'images/test/')
+        self.cfg.data.val.ann_file = os.path.join(self.dataset_path, 'annotations/valid.json')
 
-        self.cfg.data.test.img_prefix = os.path.join(path, 'images/test/')
-        self.cfg.data.test.ann_file = os.path.join(path, 'annotations/valid.json')
+        self.cfg.data.test.img_prefix = os.path.join(self.dataset_path, 'images/test/')
+        self.cfg.data.test.ann_file = os.path.join(self.dataset_path, 'annotations/valid.json')
 
 
     def get_classes(self, annotation_file):
