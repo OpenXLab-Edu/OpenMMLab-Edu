@@ -1,6 +1,7 @@
 from utils.my_utils_pose import MMPose
 
 DATASET_PATH = '/home/PJLAB/congpeishan/Desktop/mmlab-proj/mmpose/demo/data/coco_tiny'
+
 def only_infer_demo():
 	img = 'utils/demo/000000000785.jpg'
 	model = MMPose(backbone='HrNet')
