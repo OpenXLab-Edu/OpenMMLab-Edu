@@ -138,14 +138,15 @@ class MMPose:
 
         #数据集修正为 images train.json val.json 形式
         # cfg.data_root = 'data/coco_tiny'
-        self.cfg.data.train.type ='PoseDataset'
-        self.cfg.data.train.ann_file = self.dataset_path+'/train.json'
-        self.cfg.data.train.img_prefix = self.dataset_path+'/images/'
+        self.cfg.data.train.type = 'PoseDataset'
+        
+        self.cfg.data.train.ann_file = os.path.join(self.dataset_path, '/train.json')
+        self.cfg.data.train.img_prefix = os.path.join(self.dataset_path, '/images/')
 
         self.cfg.data.val.type = 'PoseDataset'
-        self.cfg.data.val.ann_file = self.dataset_path+'/val.json'
-        self.cfg.data.val.img_prefix = self.dataset_path+'/images/'
+        self.cfg.data.val.ann_file = os.path.join(self.dataset_path, '/val.json')
+        self.cfg.data.val.img_prefix = os.path.join(self.dataset_path, '/images/')
 
         self.cfg.data.test.type = 'PoseDataset'
-        self.cfg.data.test.ann_file = self.dataset_path+'/val.json'
-        self.cfg.data.test.img_prefix = self.dataset_path+'/images/'
+        self.cfg.data.test.ann_file = os.path.join(self.dataset_path, '/val.json')
+        self.cfg.data.test.img_prefix = os.path.join(self.dataset_path, '/images/')

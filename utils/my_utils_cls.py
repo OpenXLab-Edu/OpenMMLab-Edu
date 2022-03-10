@@ -46,7 +46,7 @@ class MMClassification:
 
     def train(self, random_seed=0, save_fold='./checkpoints', distributed=False, validate=True, device="cpu",
               metric='accuracy', optimizer="SGD", epochs=100, lr=0.001, weight_decay=0.001,
-              checkpoint='./checkpoints/latest.pth'):# 加config
+              checkpoint=None):# 加config
 
         # 获取config信息
 
@@ -57,7 +57,6 @@ class MMClassification:
         '''for lenet mnist, model.head
         for MobileNet, model.backbone
         crazy!!!!'''
-
         # model_head = list(self.cfg.model.keys())[1]
         # print(self.num_classes,"==================================\n")
         if self.num_classes != -1:
@@ -144,18 +143,17 @@ class MMClassification:
             to_rgb=True
         )
 
-
-        self.cfg.data.train.data_prefix = path + '/training_set/training_set'
-        self.cfg.data.train.classes = path + '/classes.txt'
+        self.cfg.data.train.data_prefix = os.path.join(self.dataset_path, '/training_set/training_set')
+        self.cfg.data.train.classes = os.path.join(self.dataset_path, '/classes.txt')
         # self.cfg.data.train.ann_file = path + '/train.txt'
 
-        self.cfg.data.val.data_prefix = path + '/val_set/val_set'
-        self.cfg.data.val.ann_file = path + '/val.txt'
-        self.cfg.data.val.classes = path + '/classes.txt'
+        self.cfg.data.val.data_prefix = os.path.join(self.dataset_path, '/val_set/val_set')
+        self.cfg.data.val.ann_file = os.path.join(self.dataset_path, '/val.txt')
+        self.cfg.data.val.classes = os.path.join(self.dataset_path, '/classes.txt')
 
-        self.cfg.data.test.data_prefix = path + '/test_set/test_set'
-        self.cfg.data.test.ann_file = path + '/test.txt'
-        self.cfg.data.test.classes = path + '/classes.txt'
+        self.cfg.data.test.data_prefix = os.path.join(self.dataset_path, '/test_set/test_set')
+        self.cfg.data.test.ann_file = os.path.join(self.dataset_path, '/test.txt')
+        self.cfg.data.test.classes = os.path.join(self.dataset_path, '/classes.txt')
 
     # def print_configs(self):
     #     if self.backbone is None:
