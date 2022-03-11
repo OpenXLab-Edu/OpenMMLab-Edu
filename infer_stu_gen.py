@@ -1,24 +1,27 @@
 from utils.my_utils_gen import MMGeneration
 
 
-# def only_infer_demo():
-# 	img = 'data/coco/images/train/00020.jpg'
-# 	model = MMDetection(backbone="FasterRCNN", dataset_path="data/coco")
-# 	model.inference(infer_data=img, rpn_threshold=0.5, rcnn_threshold=0.3)
+def only_infer_demo():
+	img = 'data/edges2shoes/val/2_AB.jpg'
+	model = MMGeneration(backbone="Pix2Pix", dataset_path="data/edges2shoes")
+	model.inference(is_trained=False, infer_data=img, save_path = "result/demo.png")
 
-# def simple_train_demo():
-# 	model = MMDetection()
-# 	model.num_classes = 1
-# 	model.load_dataset(path='data/coco/')
-# 	model.train(epochs=15)
+def simple_train_demo():
+	model = MMGeneration()
+	model.load_dataset(path='data/edges2shoes')
+	model.save_fold = "checkpoints/gen_edges2shoes"
+	model.train(total_iters=5000)
 
 
 def normal_train_demo():
 	model = MMGeneration(backbone='Pix2Pix')
 	model.load_dataset(path='data/edges2shoes')
-	model.save_fold = "checkpoints/gen"
-	model.train(epochs=15, validate=True)
-	# model.inference(is_trained=True, pretrain_model = './checkpoints/gen/latest.pth', infer_data='./data/coco/images/test/0000.jpg', rpn_threshold=0.5, rcnn_threshold=0.3)
+	model.save_fold = "checkpoints/gen_edges2shoes"
+	# model.train(iters=5000, validate=True)
+	model.inference(is_trained=True, 
+					pretrain_model = 'checkpoints/gen_edges2shoes/ckpt/gen_edges2shoes/latest.pth', 
+					infer_data='utils/demo/2_AB.jpg', 
+					save_path = "result/2_AB.jpg")
 
 
 # def continue_train_demo():

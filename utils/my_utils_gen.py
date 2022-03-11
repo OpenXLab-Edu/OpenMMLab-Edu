@@ -5,6 +5,7 @@ from mmgen.apis import train_model, init_model, sample_img2img_model
 from mmgen.models import build_model
 from mmgen.datasets import build_dataset
 from mmcv.runner import load_checkpoint
+from torchvision import utils
 import time
 import os
 
@@ -16,7 +17,7 @@ class MMGeneration:
         ):
 
         self.config = './utils/models/Pix2Pix/Pix2Pix.py'
-        self.checkpoint = './utils/models/Pix2Pix/Pix2Pix.pth'
+        self.checkpoint = './utils/models/Pix2Pix/pix2pix_edges2shoes.pth'
 
         self.backbone = backbone
         backbone_path = os.path.join('./utils/models', self.backbone)
@@ -42,7 +43,7 @@ class MMGeneration:
 
 
     def train(self, random_seed=0, checkpoint = None, save_fold='./checkpoints', distributed=False, validate=True,
-              epochs=100, lr=0.001, weight_decay=0.001):
+              total_iters=100, lr_generators = 0.002, lr_discriminators=0.002, weight_decay=0.001):
         # 加载网络模型的配置文件
         self.cfg = Config.fromfile(self.backbonedict[self.backbone])
 
@@ -62,7 +63,7 @@ class MMGeneration:
             load_checkpoint(model, checkpoint)
 
         # 根据输入参数更新config文件
-        # self.cfg.optimizer.lr = lr  # 学习率
+        self.cfg.total_iters = total_iters  # 学习率
         # self.cfg.optimizer.type = optimizer  # 优化器
         # self.cfg.optimizer.weight_decay = weight_decay  # 优化器的衰减权重
         # self.cfg.evaluation.metric = metric  # 验证指标
@@ -76,7 +77,6 @@ class MMGeneration:
 
         meta = dict()
 
-
         train_model(
             model,
             datasets,
@@ -88,9 +88,26 @@ class MMGeneration:
         )
 
 
-    def inference(self,):
-        return 0
+    def inference(self,
+                is_trained=False,
+                pretrain_model="checkpoints/gen/ckpt/gen/latest.pth",
+                infer_data="data/edges2shoes/val/1_AB.jpg",
+                save_path = "result.png"):
 
+        print("========= begin inference ==========")
+        self.save_path = save_path
+
+        checkpoint = self.checkpoint
+        if is_trained:
+            # 加载数据集及配置文件的路径
+            checkpoint = pretrain_model
+            self.load_dataset(self.dataset_path)
+        model = init_model(self.cfg, checkpoint, device="cpu")
+        result = sample_img2img_model(model, infer_data, self.cfg.target_domain) # 此处的model和外面的无关,纯局部变量
+        result = (result[:, [2, 1, 0]] + 1.) / 2.
+        # save images
+        mmcv.mkdir_or_exist(os.path.dirname(self.save_path))
+        utils.save_image(result, self.save_path)
 
     def load_dataset(self, path):
         self.dataset_path = path
