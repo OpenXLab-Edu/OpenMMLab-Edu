@@ -131,19 +131,19 @@ optimizer = dict(
 lr_config = None
 
 # checkpoint saving
-checkpoint_config = dict(interval=10000, save_optimizer=True, by_epoch=False)
+checkpoint_config = dict(interval=1000, save_optimizer=True, by_epoch=False)
 custom_hooks = [
     dict(
         type='MMGenVisualizationHook',
         output_dir='training_samples',
         res_name_list=[f'fake_{target_domain}'],
-        interval=5000)
+        interval=1000)
 ]
 runner = None
 use_ddp_wrapper = True
 
 # runtime settings
-total_iters = 1000
+total_iters = 5000
 workflow = [('train', 1)]
 exp_name = 'pix2pix_edges2shoes_wo_jitter_flip'
 work_dir = f'./work_dirs/experiments/{exp_name}'
@@ -159,7 +159,7 @@ metrics = dict(
 evaluation = dict(
     type='TranslationEvalHook',
     target_domain=domain_b,
-    interval=10000,
+    interval=1000,
     metrics=[
         dict(type='FID', num_images=num_images, bgr2rgb=True),
         dict(
