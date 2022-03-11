@@ -3,7 +3,7 @@ from utils.my_utils_pose import MMPose
 DATASET_PATH = '/home/PJLAB/congpeishan/Desktop/mmlab-proj/mmpose/demo/data/coco_tiny'
 def only_infer_demo():
 	img = 'utils/demo/000000000785.jpg'
-	model = MMPose(backbone='HrNet')
+	model = MMPose(backbone='SCNet')
 	model.inference(img=img)
 
 def simple_train_demo():
@@ -12,13 +12,14 @@ def simple_train_demo():
 	model.train(epochs=10, validate=True)
 
 def inference_from_train():
+	#need to modify the backbone for corresponding ckpt
     img = 'utils/demo/000000196141.jpg'
-    model = MMPose()
+    model = MMPose(backbone='SCNet')
     model.inference(is_trained=True, pretrain_model = './checkpoints/pose_model/latest.pth',img=img)
 
 
 def normal_train_demo():
-	model = MMPose(backbone='HrNet32')
+	model = MMPose(backbone='SCNet')
 	model.load_dataset(path=DATASET_PATH)
 	model.save_fold = "checkpoints/pose_model/"
 	model.train(epochs=60, validate=True)
@@ -33,8 +34,8 @@ def continue_train_demo():
 
 
 if __name__ == "__main__":
-	only_infer_demo()
+	# only_infer_demo()
 	# simple_train_demo()
 	# normal_train_demo()
 	# continue_train_demo()
-    # inference_from_train()
+    inference_from_train()
