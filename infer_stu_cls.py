@@ -1,32 +1,41 @@
-from turtle import back
-from utils.my_utils_new import MMClassification
+from utils.my_utils_cls import MMClassification
 
 
-def test1():
+def only_infer_demo():
 	img = 'utils/demo/bird.JPEG'
+	model = MMClassification(backbone='MobileNet')
+	result = model.inference(image=img)
+	print(result)
+
+
+def simple_train_demo():
 	model = MMClassification()
-	result = model.inference(image=img)
-	print(result)
+	model.load_dataset(path='fruit_dataset')
+	model.train(epochs=50, validate=False)
+	# 以下代码可测试训练出的模型的效果
+	# model.inference(is_trained=True, image='fruit_dataset/test/apple_test_1.jpg')
 
 
-def test2():
-	img = 'utils/demo/bird.JPEG'
+def normal_train_demo():
 	model = MMClassification(backbone='MobileNet')
-	result = model.inference(image=img)
-	print(result)
+	model.num_classes = 3
+	model.save = 'new_checkpoints/'
+	model.load_dataset(path='fruit_dataset')
+	model.train(epochs=50, validate=False)
+	# 以下代码可测试训练出的模型的效果
+	# model.inference(is_trained=True, pretrain_model='new_checkpoints/latest.pth', image='fruit_dataset/test/banana_test_1.jpg')
 
 
-def test3():
-	# 刚刚查到mmcv不支持cfg回传保存成config,需要我们自己魔改,因此3被搁置
-	# 思路是3才会调用train,调用完了之后输出一个config.py文件,让学生自己保存到外面然后进行一次2的步骤.
+def continue_train_demo():
 	model = MMClassification(backbone='MobileNet')
-	model.num_classes = 2
-	model.load_dataset(path='data/ImageNet')
-	model.train(epochs=1, device='cuda:0', validate=False)
-	model.inference(is_trained=True, pretrain_model = './checkpoints/latest.pth',image='./data/ImageNet/test_set/test_set/cats/cat.4003.jpg')
+	model.num_classes = 3
+	# model.save = 'new_checkpoints/'
+	model.load_dataset(path='fruit_dataset')
+	model.train(epochs=5, validate=False, checkpoint='checkpoints/latest.pth')
 
 
 if __name__ == "__main__":
-	# test1()
-	# test2()
-	test3()
+	# only_infer_demo()
+	# simple_train_demo()
+	# normal_train_demo()
+	continue_train_demo()
