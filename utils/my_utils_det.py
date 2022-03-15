@@ -156,7 +156,7 @@ class MMDetection:
         classes = ()
         with open(annotation_file, 'r') as f:
             dataset = json.load(f)
-            categories = dataset["categories"]
+            # categories = dataset["categories"]
             if 'categories' in dataset:
                 for cat in dataset['categories']:
                     classes = classes + (cat['name'],)
