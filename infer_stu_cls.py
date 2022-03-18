@@ -4,6 +4,7 @@ from utils.my_utils_cls import MMClassification
 def only_infer_demo():
 	img = 'utils/demo/bird.JPEG'
 	model = MMClassification(backbone='MobileNet')
+	model.checkpoint = 'utils/models/MobileNet/MobileNet.pth'
 	result = model.inference(image=img)
 	print(result)
 
