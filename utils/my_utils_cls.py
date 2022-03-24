@@ -49,7 +49,6 @@ class MMClassification:
               checkpoint=None):# 加config
 
         # 获取config信息
-
         self.cfg = Config.fromfile(self.backbonedict[self.backbone])
         if self.save is not None:
             save_fold = self.save
@@ -68,7 +67,8 @@ class MMClassification:
         self.load_dataset(self.dataset_path)
         print("进行了cfg的切换")
             # 进行
-        self.cfg.work_dir = save_fold
+        self.save_fold = save_fold
+        self.cfg.work_dir = self.save_fold
         # 创建工作目录
         mmcv.mkdir_or_exist(osp.abspath(self.cfg.work_dir))
         # 创建分类器

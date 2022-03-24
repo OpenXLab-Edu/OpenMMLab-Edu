@@ -50,6 +50,7 @@ class MMDetection:
 
     def train(self, random_seed=0, checkpoint = None, save_fold='./checkpoints', distributed=False, validate=True,
               metric='bbox', optimizer="SGD", epochs=100, lr=0.001, weight_decay=0.001, Frozen_stages=1):# 加config
+        self.save_fold = save_fold
         # 加载网络模型的配置文件
         self.cfg = Config.fromfile(self.backbonedict[self.backbone])
 
