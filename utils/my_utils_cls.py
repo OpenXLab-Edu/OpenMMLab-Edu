@@ -143,15 +143,15 @@ class MMClassification:
             to_rgb=True
         )
 
-        self.cfg.data.train.data_prefix = os.path.join(self.dataset_path, '/training_set/training_set')
+        self.cfg.data.train.data_prefix = os.path.join(self.dataset_path, '/training_set')
         self.cfg.data.train.classes = os.path.join(self.dataset_path, '/classes.txt')
         # self.cfg.data.train.ann_file = path + '/train.txt'
 
-        self.cfg.data.val.data_prefix = os.path.join(self.dataset_path, '/val_set/val_set')
+        self.cfg.data.val.data_prefix = os.path.join(self.dataset_path, '/val_set')
         self.cfg.data.val.ann_file = os.path.join(self.dataset_path, '/val.txt')
         self.cfg.data.val.classes = os.path.join(self.dataset_path, '/classes.txt')
 
-        self.cfg.data.test.data_prefix = os.path.join(self.dataset_path, '/test_set/test_set')
+        self.cfg.data.test.data_prefix = os.path.join(self.dataset_path, '/test_set')
         self.cfg.data.test.ann_file = os.path.join(self.dataset_path, '/test.txt')
         self.cfg.data.test.classes = os.path.join(self.dataset_path, '/classes.txt')
 
