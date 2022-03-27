@@ -44,7 +44,7 @@ class MMClassification:
         self.num_classes = num_classes
         self.save = None
 
-    def train(self, random_seed=0, save_fold='./checkpoints', distributed=False, validate=True, device="cpu",
+    def train(self, random_seed=0, save_fold='./checkpoints/cls_model', distributed=False, validate=True, device="cpu",
               metric='accuracy', optimizer="SGD", epochs=100, lr=0.001, weight_decay=0.001,
               checkpoint=None):# 加config
 
@@ -114,7 +114,7 @@ class MMClassification:
         )
         
     def inference(self, device='cpu',
-                 pretrain_model='./checkpoints/latest.pth',
+                 pretrain_model='./checkpoints/cls_model/latest.pth',
                  is_trained=False,
                 image=None, show=True):
         print("========= begin inference ==========")
