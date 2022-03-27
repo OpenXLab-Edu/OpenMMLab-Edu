@@ -17,11 +17,11 @@ class MMDetection:
         dataset_path = None
         ):
 
-        self.config = './1/models/FasterRCNN/FasterRCNN.py'
-        self.checkpoint = './1/models/FasterRCNN/FasterRCNN.pth'
+        self.config = './MMEdu/models/FasterRCNN/FasterRCNN.py'
+        self.checkpoint = './MMEdu/models/FasterRCNN/FasterRCNN.pth'
         
         self.backbone = backbone
-        backbone_path = os.path.join('./1/models', self.backbone)
+        backbone_path = os.path.join('./MMEdu/models', self.backbone)
         ckpt_cfg_list = list(os.listdir(backbone_path))
         for item in ckpt_cfg_list:
             if item[-1] == 'y':
@@ -36,8 +36,8 @@ class MMDetection:
         self.dataset_path = dataset_path
         self.lr = None
         self.backbonedict = {
-            "FasterRCNN": './1/models/FasterRCNN/FasterRCNN.py',
-            "Yolov3": './1/models/ResNet/ResNet50.py',
+            "FasterRCNN": './MMEdu/models/FasterRCNN/FasterRCNN.py',
+            "Yolov3": './MMEdu/models/ResNet/ResNet50.py',
             # 下略
         }
         self.num_classes = num_classes

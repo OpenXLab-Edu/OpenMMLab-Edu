@@ -1,10 +1,10 @@
-from MMEdu.Classification_Edu import MMClassification
+from MMEdu import MMClassification
 
 
 def only_infer_demo():
-	img = '1/demo/bird.JPEG'
+	img = 'bird.JPEG'
 	model = MMClassification(backbone='MobileNet')
-	model.checkpoint = '1/models/MobileNet/MobileNet.pth'
+	model.checkpoint = 'MMEdu/models/MobileNet/MobileNet.pth'
 	result = model.inference(image=img)
 	print(result)
 
@@ -20,7 +20,7 @@ def simple_train_demo():
 def normal_train_demo():
 	model = MMClassification(backbone='MobileNet')
 	model.num_classes = 3
-	model.save = 'new_checkpoints/'
+	model.save = 'checkpoints/cls_fruit'
 	model.load_dataset(path='fruit_dataset')
 	model.train(epochs=50, validate=False)
 	# 以下代码可测试训练出的模型的效果
@@ -30,9 +30,9 @@ def normal_train_demo():
 def continue_train_demo():
 	model = MMClassification(backbone='MobileNet')
 	model.num_classes = 3
-	# model.save = 'new_checkpoints/'
+	# model.save = 'checkpoints/cls_fruit'
 	model.load_dataset(path='fruit_dataset')
-	model.train(epochs=5, validate=False, checkpoint='checkpoints/latest.pth')
+	model.train(epochs=5, validate=False, checkpoint='checkpoints/cls_fruit/latest.pth')
 
 
 if __name__ == "__main__":

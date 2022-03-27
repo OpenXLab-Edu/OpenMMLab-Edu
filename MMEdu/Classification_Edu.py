@@ -16,11 +16,11 @@ class MMClassification:
         # dataset_type = 'ImageNet'
         ):
 
-        self.config = './1/models/MobileNet/MobileNet.py'
-        self.checkpoint = './1/models/MobileNet/MobileNet.pth'
+        self.config = './MMEdu/models/MobileNet/MobileNet.py'
+        self.checkpoint = './MMEdu/models/MobileNet/MobileNet.pth'
 
         self.backbone = backbone
-        backbone_path = os.path.join('./1/models', self.backbone)
+        backbone_path = os.path.join('./MMEdu/models', self.backbone)
         ckpt_cfg_list = list(os.listdir(backbone_path))
         for item in ckpt_cfg_list:
             if item[-1] == 'y':
@@ -35,9 +35,9 @@ class MMClassification:
         self.dataset_path = None
         self.lr = None
         self.backbonedict = {
-            "MobileNet": './1/models/MobileNet/MobileNet.py',
-            "ResNet": './1/models/ResNet/ResNet50.py',
-            'LeNet': './1/models/LeNet/LeNet.py'
+            "MobileNet": './MMEdu/models/MobileNet/MobileNet.py',
+            "ResNet": './MMEdu/models/ResNet/ResNet50.py',
+            'LeNet': './MMEdu/models/LeNet/LeNet.py'
             # 下略
         }
 
