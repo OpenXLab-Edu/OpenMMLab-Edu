@@ -44,7 +44,7 @@ class MMGeneration:
         return None
 
 
-    def train(self, random_seed=0, checkpoint = None, save_fold='./checkpoints', distributed=False, validate=True,
+    def train(self, random_seed=0, checkpoint = None, save_fold='./checkpoints/gen_model', distributed=False, validate=True,
               epoch=50, lr_generators = 0.002, lr_discriminators=0.002, weight_decay=0.001, inverse=False):
         # 加载网络模型的配置文件
         self.cfg = Config.fromfile(self.backbonedict[self.backbone])
@@ -99,21 +99,21 @@ class MMGeneration:
         )
 
     def inference(self,
-                  is_trained=False,
-                  pretrain_model="checkpoints/gen/ckpt/gen/latest.pth",
-                  infer_data="data/edges2shoes/val/1_AB.jpg",
-                  save_path = "result.png"):
-        sigan = "MMEdu/models/SinGAN/singan_balloons.pth"
+                  is_trained = False,
+                  pretrain_model = "./checkpoints/gen_model/ckpt/gen/latest.pth",
+                  infer_data = "./dataset/edges2shoes/val/1_AB.jpg",
+                  save_path = "./results/gen_result.png"):
+        sigan = "./MMEdu/models/SinGAN/singan_balloons.pth"
         print("========= begin inference ==========")
         self.save_path = save_path
         checkpoint = self.checkpoint
-        checkpoint = 'MMEdu/models/SinGAN/singan_balloons_20210406_191047-8fcd94cf.pth'
+        checkpoint = './MMEdu/models/SinGAN/singan_balloons_20210406_191047-8fcd94cf.pth'
         if is_trained:
             # 加载数据集及配置文件的路径
             checkpoint = pretrain_model
             self.load_dataset(self.dataset_path)
         model = init_model(self.cfg, checkpoint, device="cuda:0")
-        result = sample_unconditional_model(model,2,sample_model='orig')
+        result = sample_unconditional_model(model, 2, sample_model='orig')
         # # result = sample_img2img_model(model, infer_data, self.cfg.target_domain) # 此处的model和外面的无关,纯局部变量
         result = (result[:, [2, 1, 0]] + 1.) / 2.
         # # save images

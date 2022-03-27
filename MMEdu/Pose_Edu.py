@@ -128,9 +128,8 @@ class MMPose:
         vis_result = cv2.resize(vis_result, dsize=None, fx=0.5, fy=0.5)
         from IPython.display import Image, display
         import tempfile
-        import os.path as osp
         with tempfile.TemporaryDirectory() as tmpdir:
-            file_name = osp.join('../results', 'pose_result.png')
+            file_name = os.path.join('results', 'pose_result.png')
             cv2.imwrite(file_name, vis_result)
             display(Image(file_name))
         return None

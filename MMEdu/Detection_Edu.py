@@ -43,7 +43,7 @@ class MMDetection:
         self.num_classes = num_classes
 
 
-    def train(self, random_seed=0, checkpoint = None, save_fold='./checkpoints', distributed=False, validate=True,
+    def train(self, random_seed=0, checkpoint = None, save_fold='./checkpoints/det_model', distributed=False, validate=True,
               metric='bbox', optimizer="SGD", epochs=100, lr=0.001, weight_decay=0.001, Frozen_stages=1):# 加config
         self.save_fold = save_fold
         # 加载网络模型的配置文件
@@ -102,9 +102,9 @@ class MMDetection:
 
         
     def inference(self, device='cpu',
-                 pretrain_model = './checkpoints/latest.pth',
+                 pretrain_model = './checkpoints/det_model/latest.pth',
                  is_trained=False,
-                 infer_data=None, show=True, rpn_threshold=0.5,rcnn_threshold=0.3,
+                 infer_data=None, show=True, rpn_threshold=0.5, rcnn_threshold=0.3,
                  work_dir=None):
         print("========= begin inference ==========")
         model_fold = self.cfg.work_dir
