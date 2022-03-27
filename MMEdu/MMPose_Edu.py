@@ -27,7 +27,7 @@ class MMPose:
         ):
 
         self.backbone_det = backbone_det
-        backbone_det_path = os.path.join('./1/models', self.backbone_det)
+        backbone_det_path = os.path.join('./MMEdu/models', self.backbone_det)
         ckpt_cfg_list = list(os.listdir(backbone_det_path))
         for item in ckpt_cfg_list:
             if item[-1] == 'y':
@@ -38,7 +38,7 @@ class MMPose:
                 print("Warning!!! There is an unrecognized file in the backbone folder.")
 
         self.backbone = backbone
-        backbone_path = os.path.join('./1/models', self.backbone)
+        backbone_path = os.path.join('./MMEdu/models', self.backbone)
         ckpt_cfg_list = list(os.listdir(backbone_path))
         for item in ckpt_cfg_list:
             if item[-1] == 'y':
@@ -130,7 +130,7 @@ class MMPose:
         import tempfile
         import os.path as osp
         with tempfile.TemporaryDirectory() as tmpdir:
-            file_name = osp.join('../1/', 'pose_results.png')
+            file_name = osp.join('../results', 'pose_result.png')
             cv2.imwrite(file_name, vis_result)
             display(Image(file_name))
         return None

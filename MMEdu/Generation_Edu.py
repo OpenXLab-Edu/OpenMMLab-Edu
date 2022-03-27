@@ -18,11 +18,11 @@ class MMGeneration:
         tpye = ""
         ):
         
-        self.config = './1/models/Pix2Pix/Pix2Pix.py'
-        self.checkpoint = './1/models/Pix2Pix/pix2pix_edges2shoes.pth'
+        self.config = './MMEdu/models/Pix2Pix/Pix2Pix.py'
+        self.checkpoint = './MMEdu/models/Pix2Pix/pix2pix_edges2shoes.pth'
 
         self.backbone = backbone
-        backbone_path = os.path.join('./1/models', self.backbone)
+        backbone_path = os.path.join('./MMEdu/models', self.backbone)
         ckpt_cfg_list = list(os.listdir(backbone_path))
         for item in ckpt_cfg_list:
             if item[-1] == 'y':
@@ -36,8 +36,8 @@ class MMGeneration:
         self.dataset_path = dataset_path
         self.lr = None
         self.backbonedict = {
-            "Pix2Pix": './1/models/Pix2Pix/Pix2Pix.py',
-            "SinGAN": './1/models/SinGAN/SinGAN.py',
+            "Pix2Pix": './MMEdu/models/Pix2Pix/Pix2Pix.py',
+            "SinGAN": './MMEdu/models/SinGAN/SinGAN.py',
         }
         self.cfg = Config.fromfile(self.backbonedict[self.backbone])
         print(self.cfg)
@@ -103,11 +103,11 @@ class MMGeneration:
                   pretrain_model="checkpoints/gen/ckpt/gen/latest.pth",
                   infer_data="data/edges2shoes/val/1_AB.jpg",
                   save_path = "result.png"):
-        sigan = "1/models/SinGAN/singan_balloons.pth"
+        sigan = "MMEdu/models/SinGAN/singan_balloons.pth"
         print("========= begin inference ==========")
         self.save_path = save_path
         checkpoint = self.checkpoint
-        checkpoint = '1/models/SinGAN/singan_balloons_20210406_191047-8fcd94cf.pth'
+        checkpoint = 'MMEdu/models/SinGAN/singan_balloons_20210406_191047-8fcd94cf.pth'
         if is_trained:
             # 加载数据集及配置文件的路径
             checkpoint = pretrain_model
