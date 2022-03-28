@@ -1,26 +1,31 @@
+import os
 import mmcv
-import os.path as osp
-from mmcv import Config
 import time
+from mmcv import Config
 from mmcls.apis import inference_model, init_model, show_result_pyplot, train_model
 from mmcls.models import build_classifier
 from mmcls.datasets import build_dataset
 from mmcv.runner import load_checkpoint
-import os
 
 
 class MMClassification:
-    def __init__(self, 
+    def __init__(
+        self, 
         backbone='MobileNet',
         num_classes=-1
         # dataset_type = 'ImageNet'
         ):
 
-        self.config = './MMEdu/models/MobileNet/MobileNet.py'
-        self.checkpoint = './MMEdu/models/MobileNet/MobileNet.pth'
+        # 获取外部运行py的绝对路径
+        self.cwd = os.path.dirname(os.getcwd())
+        # 获取当前文件的绝对路径
+        self.file_dirname = os.path.dirname(os.path.abspath(__file__))
+        
+        self.config = os.path.join(self.file_dirname, 'models', 'MobileNet/MobileNet.py')
+        self.checkpoint = os.path.join(self.file_dirname, 'models', 'MobileNet/MobileNet.pth')
 
         self.backbone = backbone
-        backbone_path = os.path.join('./MMEdu/models', self.backbone)
+        backbone_path = os.path.join(self.file_dirname, 'models', self.backbone)
         ckpt_cfg_list = list(os.listdir(backbone_path))
         for item in ckpt_cfg_list:
             if item[-1] == 'y':
@@ -29,35 +34,35 @@ class MMClassification:
                 self.checkpoint = os.path.join(backbone_path, item)
             else:
                 print("Warning!!! There is an unrecognized file in the backbone folder.")
-
         self.cfg = Config.fromfile(self.config)
-
         self.dataset_path = None
         self.lr = None
         self.backbonedict = {
-            "MobileNet": './MMEdu/models/MobileNet/MobileNet.py',
-            "ResNet": './MMEdu/models/ResNet/ResNet50.py',
-            'LeNet': './MMEdu/models/LeNet/LeNet.py'
+            "MobileNet": os.path.join(self.file_dirname, 'models', 'MobileNet/MobileNet.py'),
+            "ResNet": os.path.join(self.file_dirname, 'models', 'ResNet/ResNet50.py'),
+            'LeNet': os.path.join(self.file_dirname, 'models', 'LeNet/LeNet.py'),
             # 下略
         }
 
         self.num_classes = num_classes
-        self.save = None
 
-    def train(self, random_seed=0, save_fold='./checkpoints/cls_model', distributed=False, validate=True, device="cpu",
+
+    def train(self, random_seed=0, save_fold=None, distributed=False, validate=True, device="cpu",
               metric='accuracy', optimizer="SGD", epochs=100, lr=0.001, weight_decay=0.001,
-              checkpoint=None):# 加config
-
+              checkpoint=None):
         # 获取config信息
         self.cfg = Config.fromfile(self.backbonedict[self.backbone])
-        if self.save is not None:
-            save_fold = self.save
-        # print(self.cfg.model.backbone.keys())
-        '''for lenet mnist, model.head
-        for MobileNet, model.backbone
-        crazy!!!!'''
-        # model_head = list(self.cfg.model.keys())[1]
-        # print(self.num_classes,"==================================\n")
+        print("进行了cfg的切换")
+
+        # 如果外部不指定save_fold
+        if not self.save_fold:
+            # 如果外部也没有传入save_fold，我们使用默认路径
+            if not save_fold:
+                self.save_fold = os.path.join(self.cwd, 'checkpoints/cls_model')
+            # 如果外部传入save_fold，我们使用传入值
+            else:
+                self.save_fold = save_fold
+
         if self.num_classes != -1:
             if 'num_classes' in self.cfg.model.backbone.keys():
                 self.cfg.model.backbone.num_classes = self.num_classes
@@ -65,12 +70,11 @@ class MMClassification:
                 self.cfg.model.head.num_classes = self.num_classes
 
         self.load_dataset(self.dataset_path)
-        print("进行了cfg的切换")
-            # 进行
-        self.save_fold = save_fold
+        
+        # 进行
         self.cfg.work_dir = self.save_fold
         # 创建工作目录
-        mmcv.mkdir_or_exist(osp.abspath(self.cfg.work_dir))
+        mmcv.mkdir_or_exist(os.path.abspath(self.cfg.work_dir))
         # 创建分类器
         model = build_classifier(self.cfg.model)
         if not checkpoint:
@@ -114,21 +118,27 @@ class MMClassification:
         )
         
     def inference(self, device='cpu',
-                 pretrain_model='./checkpoints/cls_model/latest.pth',
-                 is_trained=False,
-                image=None, show=True):
+                  pretrain_model=None,
+                  is_trained=False,
+                  image=None, show=True
+        ):
+        if not pretrain_model:
+            pretrain_model = os.path.join(self.cwd, 'checkpoints/cls_model/latest.pth')
+
         print("========= begin inference ==========")
-        model_fold = self.cfg.work_dir
+
         if self.num_classes != -1:
             if 'num_classes' in self.cfg.model.backbone.keys():
                 self.cfg.model.backbone.num_classes = self.num_classes
             else:
                 self.cfg.model.head.num_classes = self.num_classes
-        img_array = mmcv.imread(image)
+
         checkpoint = self.checkpoint
         if is_trained:
             checkpoint = pretrain_model
         model = init_model(self.cfg, checkpoint, device=device)
+
+        img_array = mmcv.imread(image)
         result = inference_model(model, img_array) # 此处的model和外面的无关,纯局部变量
         if show == True:
             show_result_pyplot(model, image, result)
@@ -154,21 +164,4 @@ class MMClassification:
         self.cfg.data.test.data_prefix = os.path.join(self.dataset_path, 'test_set')
         self.cfg.data.test.ann_file = os.path.join(self.dataset_path, 'test.txt')
         self.cfg.data.test.classes = os.path.join(self.dataset_path, 'classes.txt')
-
-    # def print_configs(self):
-    #     if self.backbone is None:
-    #         model = "MobileNet"
-    #     else:
-    #         model = self.backbone
-    #     print("当前网络结构：" + model)
-    #     print("数据集路径：", self.dataset_path)
-    #     print("学习率", self.lr)
-
-# if __name__ == "__main__":
-#     img = '../img/test.jpg'
-#     # mmcls_test(img)
-#     model = MMClassification()
-#     result = model.inference(image=img)
-#     print(result)
-#     show_result_pyplot(model.SOTA_model, img, result)
 

@@ -26,8 +26,13 @@ class MMPose:
         dataset_path = None
         ):
 
+        # 获取外部运行py的绝对路径
+        self.cwd = os.path.dirname(os.getcwd())
+        # 获取当前文件的绝对路径
+        self.file_dirname = os.path.dirname(os.path.abspath(__file__))
+
         self.backbone_det = backbone_det
-        backbone_det_path = os.path.join('./MMEdu/models', self.backbone_det)
+        backbone_det_path = os.path.join(self.file_dirname, 'models', self.backbone_det)
         ckpt_cfg_list = list(os.listdir(backbone_det_path))
         for item in ckpt_cfg_list:
             if item[-1] == 'y':
@@ -38,7 +43,7 @@ class MMPose:
                 print("Warning!!! There is an unrecognized file in the backbone folder.")
 
         self.backbone = backbone
-        backbone_path = os.path.join('./MMEdu/models', self.backbone)
+        backbone_path = os.path.join(self.file_dirname, 'models', self.backbone)
         ckpt_cfg_list = list(os.listdir(backbone_path))
         for item in ckpt_cfg_list:
             if item[-1] == 'y':
@@ -56,13 +61,22 @@ class MMPose:
         return None
 
 
-    def train(self, random_seed=0, save_fold='./checkpoints/pose_model/',checkpoint = None, distributed=False, validate=True,
+    def train(self, random_seed=0, save_fold=None, checkpoint = None, distributed=False, validate=True,
               metric='PCK', save_best = 'PCK',optimizer="Adam", epochs=100, lr=5e-4):
+
+        # 如果外部不指定save_fold
+        if not self.save_fold:
+            # 如果外部也没有传入save_fold，我们使用默认路径
+            if not save_fold:
+                self.save_fold = os.path.join(self.cwd, 'checkpoints/pose_model')
+            # 如果外部传入save_fold，我们使用传入值
+            else:
+                self.save_fold = save_fold
 
         # self.cfg = Config.fromfile(self.backbonedict[self.backbone])
         # print(self.cfg.pretty_text)
         self.cfg.gpu_ids = range(1)
-        self.cfg.work_dir = save_fold
+        self.cfg.work_dir = self.save_fold
         self.cfg.load_from = checkpoint
         self.cfg.seed = random_seed
         # self.cfg.model.backbone.frozen_stages = Frozen_stages
@@ -90,12 +104,15 @@ class MMPose:
 
         
     def inference(self, device='cpu',
-                 pretrain_model = './checkpoints/pose_model/latest.pth',
+                 pretrain_model=None,
                  is_trained=False,
                 img=None, show=True,
                 work_dir=None):
+
+        if not pretrain_model:
+            pretrain_model = os.path.join(self.cwd, 'checkpoints/pose_model/latest.pth')
         print("========= begin inference ==========")
-        
+
         if is_trained == True:
             self.pose_checkpoint = pretrain_model
 
@@ -143,16 +160,16 @@ class MMPose:
         # cfg.data_root = 'data/coco_tiny'
         self.cfg.data.train.type = 'PoseDataset'
         
-        self.cfg.data.train.ann_file = os.path.join(self.dataset_path, '/train.json')
-        self.cfg.data.train.img_prefix = os.path.join(self.dataset_path, '/images/')
+        self.cfg.data.train.ann_file = os.path.join(self.dataset_path, 'train.json')
+        self.cfg.data.train.img_prefix = os.path.join(self.dataset_path, 'images')
 
         self.cfg.data.val.type = 'PoseDataset'
-        self.cfg.data.val.ann_file = os.path.join(self.dataset_path, '/val.json')
-        self.cfg.data.val.img_prefix = os.path.join(self.dataset_path, '/images/')
+        self.cfg.data.val.ann_file = os.path.join(self.dataset_path, 'val.json')
+        self.cfg.data.val.img_prefix = os.path.join(self.dataset_path, 'images')
 
         self.cfg.data.test.type = 'PoseDataset'
-        self.cfg.data.test.ann_file = os.path.join(self.dataset_path, '/val.json')
-        self.cfg.data.test.img_prefix = os.path.join(self.dataset_path, '/images/')
+        self.cfg.data.test.ann_file = os.path.join(self.dataset_path, 'val.json')
+        self.cfg.data.test.img_prefix = os.path.join(self.dataset_path, 'images')
 
 
 @DATASETS.register_module()

@@ -1,4 +1,4 @@
-from mmedu import MMPose
+from MMEdu import MMPose
 
 DATASET_PATH = '/home/PJLAB/congpeishan/Desktop/mmlab-proj/mmpose/demo/data/coco_tiny'
 
