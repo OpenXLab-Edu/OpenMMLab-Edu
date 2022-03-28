@@ -1,4 +1,4 @@
-from mmedu import MMGeneration
+from MMEdu import MMGeneration
 
 
 def only_infer_demo():

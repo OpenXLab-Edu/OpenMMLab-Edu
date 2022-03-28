@@ -1,4 +1,4 @@
-from mmedu import MMDetection
+from MMEdu import MMDetection
 
 
 def only_infer_demo():

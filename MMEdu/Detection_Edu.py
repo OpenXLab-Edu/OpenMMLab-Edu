@@ -1,13 +1,13 @@
+import os
+import json
 import mmcv
-import os.path as osp
+import time
 from mmcv import Config
 from mmdet.apis import inference_detector, init_detector, show_result_pyplot, train_detector
 from mmdet.models import build_detector
 from mmdet.datasets import build_dataset
 from mmcv.runner import load_checkpoint
-import time
-import os
-import json
+
 
 
 class MMDetection:
@@ -17,11 +17,16 @@ class MMDetection:
         dataset_path = None
         ):
 
-        self.config = './MMEdu/models/FasterRCNN/FasterRCNN.py'
-        self.checkpoint = './MMEdu/models/FasterRCNN/FasterRCNN.pth'
+        # 获取外部运行py的绝对路径
+        self.cwd = os.path.dirname(os.getcwd())
+        # 获取当前文件的绝对路径
+        self.file_dirname = os.path.dirname(os.path.abspath(__file__))
+
+        self.config = os.path.join(self.file_dirname, 'models', 'FasterRCNN/FasterRCNN.py')
+        self.checkpoint = os.path.join(self.file_dirname, 'models', '/FasterRCNN/FasterRCNN.pth')
         
         self.backbone = backbone
-        backbone_path = os.path.join('./MMEdu/models', self.backbone)
+        backbone_path = os.path.join(self.file_dirname, 'models', self.backbone)
         ckpt_cfg_list = list(os.listdir(backbone_path))
         for item in ckpt_cfg_list:
             if item[-1] == 'y':
@@ -36,18 +41,29 @@ class MMDetection:
         self.dataset_path = dataset_path
         self.lr = None
         self.backbonedict = {
-            "FasterRCNN": './MMEdu/models/FasterRCNN/FasterRCNN.py',
-            "Yolov3": './MMEdu/models/ResNet/ResNet50.py',
+            "FasterRCNN": os.path.join(self.file_dirname, 'models', 'FasterRCNN/FasterRCNN.py'),
+            "Yolov3": os.path.join(self.file_dirname, 'models', 'Yolov3/Yolov3.py'),
             # 下略
         }
         self.num_classes = num_classes
 
 
-    def train(self, random_seed=0, checkpoint = None, save_fold='./checkpoints/det_model', distributed=False, validate=True,
-              metric='bbox', optimizer="SGD", epochs=100, lr=0.001, weight_decay=0.001, Frozen_stages=1):# 加config
-        self.save_fold = save_fold
+    def train(self, random_seed=0, save_fold=None, distributed=False, validate=True,
+              metric='bbox', optimizer="SGD", epochs=100, lr=0.001, weight_decay=0.001, Frozen_stages=1,
+              checkpoint = None):
+        
         # 加载网络模型的配置文件
         self.cfg = Config.fromfile(self.backbonedict[self.backbone])
+        print("进行了cfg的切换")
+
+        # 如果外部不指定save_fold
+        if not self.save_fold:
+            # 如果外部也没有传入save_fold，我们使用默认路径
+            if not save_fold:
+                self.save_fold = os.path.join(self.cwd, 'checkpoints/det_model')
+            # 如果外部传入save_fold，我们使用传入值
+            else:
+                self.save_fold = save_fold
 
         self.cfg.model.backbone.frozen_stages = Frozen_stages
 
@@ -62,11 +78,10 @@ class MMDetection:
         self.cfg.data.test.classes = self.cfg.classes
         self.cfg.data.val.classes = self.cfg.classes
 
-        print("进行了cfg的切换")
         # 进行
         self.cfg.work_dir = self.save_fold
         # 创建工作目录
-        mmcv.mkdir_or_exist(osp.abspath(self.cfg.work_dir))
+        mmcv.mkdir_or_exist(os.path.abspath(self.cfg.work_dir))
         # 创建分类器
         datasets = [build_dataset(self.cfg.data.train)]
         model = build_detector(self.cfg.model, train_cfg=self.cfg.get('train_cfg'), test_cfg=self.cfg.get('test_cfg'))
@@ -76,7 +91,6 @@ class MMDetection:
             load_checkpoint(model, checkpoint)
 
         model.CLASSES = self.cfg.classes
-        # print("--------------------",self.cfg.model.get('train_cfg'),self.cfg.data.train)
         # 根据输入参数更新config文件
         self.cfg.optimizer.lr = lr  # 学习率
         self.cfg.optimizer.type = optimizer  # 优化器
@@ -102,17 +116,18 @@ class MMDetection:
 
         
     def inference(self, device='cpu',
-                 pretrain_model = './checkpoints/det_model/latest.pth',
-                 is_trained=False,
-                 infer_data=None, show=True, rpn_threshold=0.5, rcnn_threshold=0.3,
-                 work_dir=None):
+                  pretrain_model=None,
+                  is_trained=False,
+                  infer_data=None, show=True, rpn_threshold=0.5, rcnn_threshold=0.3,
+        ):
+        if not pretrain_model:
+            pretrain_model = os.path.join(self.cwd, 'checkpoints/det_model/latest.pth')
+
         print("========= begin inference ==========")
-        model_fold = self.cfg.work_dir
 
         if self.num_classes != -1:
             self.cfg.model.roi_head.bbox_head.num_classes = self.num_classes
 
-        img_array = mmcv.imread(infer_data)
         checkpoint = self.checkpoint
         if is_trained:
             # 加载数据集及配置文件的路径
@@ -127,6 +142,8 @@ class MMDetection:
         model = init_detector(self.cfg, checkpoint, device=device)
         model.test_cfg.rpn.nms.iou_threshold = 1 - rpn_threshold
         model.test_cfg.rcnn.nms.iou_threshold = 1 - rcnn_threshold
+
+        img_array = mmcv.imread(infer_data)
         result = inference_detector(model, img_array) # 此处的model和外面的无关,纯局部变量
         if show == True:
             show_result_pyplot(model, infer_data, result)

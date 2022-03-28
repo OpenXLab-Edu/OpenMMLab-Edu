@@ -1,4 +1,4 @@
-from mmedu import MMClassification
+from MMEdu import MMClassification
 
 
 def only_infer_demo():
@@ -20,7 +20,7 @@ def simple_train_demo():
 def normal_train_demo():
 	model = MMClassification(backbone='MobileNet')
 	model.num_classes = 3
-	model.save = 'checkpoints/cls_model/fruit'
+	model.save_fold = 'checkpoints/cls_model/fruit'
 	model.load_dataset(path='dataset/fruit_dataset')
 	model.train(epochs=50, validate=False)
 	# 以下代码可测试训练出的模型的效果
@@ -30,7 +30,7 @@ def normal_train_demo():
 def continue_train_demo():
 	model = MMClassification(backbone='MobileNet')
 	model.num_classes = 3
-	# model.save = 'checkpoints/cls_fruit'
+	# model.save_fold = 'checkpoints/cls_fruit'
 	model.load_dataset(path='fruit_dataset')
 	model.train(epochs=5, validate=False, checkpoint='checkpoints/cls_model/fruit/latest.pth')
 
