@@ -17,66 +17,58 @@ from mmpose.core.evaluation.top_down_eval import (keypoint_nme,
 from mmpose.datasets.builder import DATASETS
 from mmpose.datasets.datasets.base import Kpt2dSviewRgbImgTopDownDataset
 
+CUR_PATH = os.path.dirname(os.path.abspath(__file__))
 
 class MMPose:
-    def __init__(self, 
+    def __init__(self,
         backbone_det='FasterRCNN-pose',
-        backbone = 'HrNet32', 
+        backbone = 'HrNet32',
         #note if inference need HrNet (64)
         dataset_path = None
         ):
 
-        # 获取外部运行py的绝对路径
-        self.cwd = os.path.dirname(os.getcwd())
-        # 获取当前文件的绝对路径
-        self.file_dirname = os.path.dirname(os.path.abspath(__file__))
-
         self.backbone_det = backbone_det
-        backbone_det_path = os.path.join(self.file_dirname, 'models', self.backbone_det)
+        backbone_det_path = os.path.join(CUR_PATH, 'models', self.backbone_det)
+        # backbone_det_path = 'models/' + self.backbone_det
         ckpt_cfg_list = list(os.listdir(backbone_det_path))
         for item in ckpt_cfg_list:
             if item[-1] == 'y':
-                self.det_config = os.path.join(backbone_det_path, item)
+                self.det_config = os.path.join(CUR_PATH,backbone_det_path, item)
             elif item[-1] == 'h':
-                self.det_checkpoint = os.path.join(backbone_det_path, item)
+                self.det_checkpoint = os.path.join(CUR_PATH,backbone_det_path, item)
             else:
                 print("Warning!!! There is an unrecognized file in the backbone folder.")
 
         self.backbone = backbone
-        backbone_path = os.path.join(self.file_dirname, 'models', self.backbone)
+        backbone_path = os.path.join(CUR_PATH, 'models', self.backbone)
         ckpt_cfg_list = list(os.listdir(backbone_path))
         for item in ckpt_cfg_list:
             if item[-1] == 'y':
-                self.pose_config = os.path.join(backbone_path, item)
+                self.pose_config = os.path.join(CUR_PATH,backbone_path, item)
             elif item[-1] == 'h':
-                self.pose_checkpoint = os.path.join(backbone_path, item)
+                self.pose_checkpoint = os.path.join(CUR_PATH,backbone_path, item)
+                print(self.pose_checkpoint)
             else:
                 print("Warning!!! There is an unrecognized file in the backbone folder.")
 
         self.cfg_det = Config.fromfile(self.det_config)
         self.cfg = Config.fromfile(self.pose_config)
-        
+
         self.dataset_path = dataset_path
+
+        if self.dataset_path:
+            self.load_dataset(self.dataset_path)
 
         return None
 
 
-    def train(self, random_seed=0, save_fold=None, checkpoint = None, distributed=False, validate=True,
+    def train(self, random_seed=0, save_fold='./checkpoints/pose_model/',checkpoint = None, distributed=False, validate=True,
               metric='PCK', save_best = 'PCK',optimizer="Adam", epochs=100, lr=5e-4):
-
-        # 如果外部不指定save_fold
-        if not self.save_fold:
-            # 如果外部也没有传入save_fold，我们使用默认路径
-            if not save_fold:
-                self.save_fold = os.path.join(self.cwd, 'checkpoints/pose_model')
-            # 如果外部传入save_fold，我们使用传入值
-            else:
-                self.save_fold = save_fold
 
         # self.cfg = Config.fromfile(self.backbonedict[self.backbone])
         # print(self.cfg.pretty_text)
         self.cfg.gpu_ids = range(1)
-        self.cfg.work_dir = self.save_fold
+        self.cfg.work_dir = save_fold
         self.cfg.load_from = checkpoint
         self.cfg.seed = random_seed
         # self.cfg.model.backbone.frozen_stages = Frozen_stages
@@ -87,7 +79,7 @@ class MMPose:
         self.cfg.optimizer.type = optimizer  # 优化器
         self.cfg.evaluation.metric = metric  # 验证指标
         self.cfg.evaluation.save_best = save_best  # 验证指标
-    
+
         datasets = [build_dataset(self.cfg.data.train)]
 
         # build model
@@ -102,24 +94,38 @@ class MMPose:
 
         return None
 
-        
-    def inference(self, device='cpu',
-                 pretrain_model=None,
-                 is_trained=False,
-                img=None, show=True,
-                work_dir=None):
 
-        if not pretrain_model:
-            pretrain_model = os.path.join(self.cwd, 'checkpoints/pose_model/latest.pth')
+    def inference(self,
+                  device='cuda:0',
+                  is_trained=False,
+                  pretrain_model='./checkpoints/pose_model/latest.pth',
+                  img=None,
+                  show=True,
+                  save=True,
+                  work_dir='./',
+                  name='pose_result'):
+        """
+        params:
+            device: 推理设备,可选参数: ('cuda:int','cpu')
+            is_trained: 是否使用本地预训练的其他模型进行训练
+            pretrain_model: 如果使用其他模型，则传入模型路径
+            img: 推理图片的路径
+            show: 是否对推理结果进行显示
+            save: 是否对推理结果进行保存
+            work_dir: 推理结果图片的保存文件夹
+            name：推理结果保存的名字
+        return:
+            pose_results: 推理的结果数据，一个列表，其中包含若干个字典，每个字典存储对应检测的人体数据。
+        """
         print("========= begin inference ==========")
 
         if is_trained == True:
             self.pose_checkpoint = pretrain_model
 
         # initialize pose model
-        pose_model = init_pose_model(self.pose_config, self.pose_checkpoint)
+        pose_model = init_pose_model(self.pose_config, self.pose_checkpoint,device = device)
         # initialize detector
-        det_model = init_detector(self.det_config, self.det_checkpoint)
+        det_model = init_detector(self.det_config, self.det_checkpoint,device=device)
 
         # inference detection
         mmdet_results = inference_detector(det_model, img)
@@ -135,6 +141,7 @@ class MMPose:
                                                                     format='xyxy',
                                                                     dataset=pose_model.cfg.data.test.type)
 
+
         # show pose estimation results
         vis_result = vis_pose_result(pose_model,
                                     img,
@@ -142,14 +149,19 @@ class MMPose:
                                     dataset=pose_model.cfg.data.test.type,
                                     show=show)
         # reduce image size
-        vis_result = cv2.resize(vis_result, dsize=None, fx=0.5, fy=0.5)
+        # vis_result = cv2.resize(vis_result, dsize=None, fx=1, fy=1)
+
+        # 如果不保存则直接返回推理结果
+        if not save:
+            return pose_results
         from IPython.display import Image, display
         import tempfile
+        import os.path as osp
         with tempfile.TemporaryDirectory() as tmpdir:
-            file_name = os.path.join('results', 'pose_result.png')
+            file_name = osp.join(work_dir, name+'.png')
             cv2.imwrite(file_name, vis_result)
             display(Image(file_name))
-        return None
+        return pose_results
 
 
     def load_dataset(self, path):
@@ -159,17 +171,17 @@ class MMPose:
         #数据集修正为 images train.json val.json 形式
         # cfg.data_root = 'data/coco_tiny'
         self.cfg.data.train.type = 'PoseDataset'
-        
+
         self.cfg.data.train.ann_file = os.path.join(self.dataset_path, 'train.json')
-        self.cfg.data.train.img_prefix = os.path.join(self.dataset_path, 'images')
+        self.cfg.data.train.img_prefix = os.path.join(self.dataset_path, 'images/')
 
         self.cfg.data.val.type = 'PoseDataset'
         self.cfg.data.val.ann_file = os.path.join(self.dataset_path, 'val.json')
-        self.cfg.data.val.img_prefix = os.path.join(self.dataset_path, 'images')
+        self.cfg.data.val.img_prefix = os.path.join(self.dataset_path, 'images/')
 
         self.cfg.data.test.type = 'PoseDataset'
         self.cfg.data.test.ann_file = os.path.join(self.dataset_path, 'val.json')
-        self.cfg.data.test.img_prefix = os.path.join(self.dataset_path, 'images')
+        self.cfg.data.test.img_prefix = os.path.join(self.dataset_path, 'images/')
 
 
 @DATASETS.register_module()
