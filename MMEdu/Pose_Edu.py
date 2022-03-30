@@ -103,11 +103,28 @@ class MMPose:
         return None
 
         
-    def inference(self, device='cpu',
-                 pretrain_model=None,
-                 is_trained=False,
-                img=None, show=True,
-                work_dir=None):
+    def inference(self,
+                  device='cuda:0',
+                  is_trained=False,
+                  pretrain_model='./checkpoints/pose_model/latest.pth',
+                  img=None,
+                  show=True,
+                  save=True,
+                  work_dir='./',
+                  name='pose_result'):
+        """
+        params:
+            device: 推理设备,可选参数: ('cuda:int','cpu')
+            is_trained: 是否使用本地预训练的其他模型进行训练
+            pretrain_model: 如果使用其他模型，则传入模型路径
+            img: 推理图片的路径
+            show: 是否对推理结果进行显示
+            save: 是否对推理结果进行保存
+            work_dir: 推理结果图片的保存文件夹
+            name：推理结果保存的名字
+        return:
+            pose_results: 推理的结果数据，一个列表，其中包含若干个字典，每个字典存储对应检测的人体数据。
+        """
 
         if not pretrain_model:
             pretrain_model = os.path.join(self.cwd, 'checkpoints/pose_model/latest.pth')
@@ -117,9 +134,9 @@ class MMPose:
             self.pose_checkpoint = pretrain_model
 
         # initialize pose model
-        pose_model = init_pose_model(self.pose_config, self.pose_checkpoint)
+        pose_model = init_pose_model(self.pose_config, self.pose_checkpoint,device = device)
         # initialize detector
-        det_model = init_detector(self.det_config, self.det_checkpoint)
+        det_model = init_detector(self.det_config, self.det_checkpoint,device=device)
 
         # inference detection
         mmdet_results = inference_detector(det_model, img)
@@ -141,16 +158,20 @@ class MMPose:
                                     pose_results,
                                     dataset=pose_model.cfg.data.test.type,
                                     show=show)
-        # reduce image size
-        vis_result = cv2.resize(vis_result, dsize=None, fx=0.5, fy=0.5)
+
+        # vis_result = cv2.resize(vis_result, dsize=None, fx=1, fy=1)
+
+        # 如果不保存则直接返回推理结果
+        if not save:
+            return pose_results
         from IPython.display import Image, display
         import tempfile
+        import os.path as osp
         with tempfile.TemporaryDirectory() as tmpdir:
-            file_name = os.path.join('results', 'pose_result.png')
+            file_name = osp.join(work_dir, name+'.png')
             cv2.imwrite(file_name, vis_result)
             display(Image(file_name))
-        return None
-
+        return pose_results
 
     def load_dataset(self, path):
 
@@ -161,15 +182,15 @@ class MMPose:
         self.cfg.data.train.type = 'PoseDataset'
         
         self.cfg.data.train.ann_file = os.path.join(self.dataset_path, 'train.json')
-        self.cfg.data.train.img_prefix = os.path.join(self.dataset_path, 'images')
+        self.cfg.data.train.img_prefix = os.path.join(self.dataset_path, 'images/')
 
         self.cfg.data.val.type = 'PoseDataset'
         self.cfg.data.val.ann_file = os.path.join(self.dataset_path, 'val.json')
-        self.cfg.data.val.img_prefix = os.path.join(self.dataset_path, 'images')
+        self.cfg.data.val.img_prefix = os.path.join(self.dataset_path, 'images/')
 
         self.cfg.data.test.type = 'PoseDataset'
         self.cfg.data.test.ann_file = os.path.join(self.dataset_path, 'val.json')
-        self.cfg.data.test.img_prefix = os.path.join(self.dataset_path, 'images')
+        self.cfg.data.test.img_prefix = os.path.join(self.dataset_path, 'images/')
 
 
 @DATASETS.register_module()
