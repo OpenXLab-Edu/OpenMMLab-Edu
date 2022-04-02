@@ -27,7 +27,7 @@ class MMPose:
         ):
 
         self.backbone_det = backbone_det
-        backbone_det_path = os.path.join('./MMEdu/models', self.backbone_det)
+        backbone_det_path = os.path.join('../MMEdu/models', self.backbone_det)
         ckpt_cfg_list = list(os.listdir(backbone_det_path))
         for item in ckpt_cfg_list:
             if item[-1] == 'y':
@@ -38,7 +38,7 @@ class MMPose:
                 print("Warning!!! There is an unrecognized file in the backbone folder.")
 
         self.backbone = backbone
-        backbone_path = os.path.join('./MMEdu/models', self.backbone)
+        backbone_path = os.path.join('../MMEdu/models', self.backbone)
         ckpt_cfg_list = list(os.listdir(backbone_path))
         for item in ckpt_cfg_list:
             if item[-1] == 'y':
@@ -91,7 +91,7 @@ class MMPose:
         
     def inference(self, device='cpu',
                  pretrain_model = './checkpoints/pose_model/latest.pth',
-                 is_trained=False,
+                 is_trained=True,
                 img=None, show=True,
                 work_dir=None):
         print("========= begin inference ==========")

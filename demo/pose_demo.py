@@ -1,4 +1,4 @@
-from mmedu import MMPose
+from MMEdu import MMPose
 
 DATASET_PATH = '/home/PJLAB/congpeishan/Desktop/mmlab-proj/mmpose/demo/data/coco_tiny'
 
@@ -35,8 +35,8 @@ def continue_train_demo():
 
 
 if __name__ == "__main__":
-	# only_infer_demo()
-	# simple_train_demo()
+	#only_infer_demo()
+	simple_train_demo()
 	# normal_train_demo()
 	# continue_train_demo()
-    inference_from_train()
+    #inference_from_train()
