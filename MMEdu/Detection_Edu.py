@@ -121,7 +121,7 @@ class MMDetection:
                   infer_data=None, show=True, rpn_threshold=0.5, rcnn_threshold=0.3,
         ):
         if not pretrain_model:
-            pretrain_model = os.path.join(self.cwd, 'checkpoints/det_model/platesssssssssssssssss/latest.pth')
+            pretrain_model = os.path.join(self.cwd, 'checkpoints/det_model/plate/latest.pth')
 
         print("========= begin inference ==========")
 
