@@ -19,7 +19,7 @@
 <center>
     <img style="border-radius: 0.3125em;
     box-shadow: 0 2px 4px 0 rgba(34,36,38,.12),0 2px 10px 0 rgba(34,36,38,.08);" 
-    src="picture/result0.png" alt=""/>
+    src="img/pose_result0.png" alt=""/>
     <br>
     <div style="color:orange; border-bottom: 1px solid #d9d9d9;
     display: inline-block;
@@ -28,6 +28,7 @@
       使用Pose_Edu进行推理的结果图
   	</div>
 </center>
+
 
 
 
@@ -134,7 +135,7 @@ model.inference(img=img,device='cpu') # 在CPU上进行推理
 <center>
     <img style="border-radius: 0.3125em;
     box-shadow: 0 2px 4px 0 rgba(34,36,38,.12),0 2px 10px 0 rgba(34,36,38,.08);" 
-    src="picture/inference.png" alt=""/>
+    src="img/pose_inference.png" alt=""/>
     <br>
     <div style="color:orange; border-bottom: 1px solid #d9d9d9;
     display: inline-block;
@@ -143,6 +144,7 @@ model.inference(img=img,device='cpu') # 在CPU上进行推理
       直接推理的运行结果图
   	</div>
 </center>
+
 
 
 
@@ -205,7 +207,7 @@ model.inference(img=img,device='cpu',show=False,save=True,work_dir='../',name='e
 <center>
     <img style="border-radius: 0.3125em;
     box-shadow: 0 2px 4px 0 rgba(34,36,38,.12),0 2px 10px 0 rgba(34,36,38,.08);" 
-    src="picture/save_dir.png" alt=""/>
+    src="img/pose_save_dir.png" alt=""/>
     <br>
     <div style="color:orange; border-bottom: 1px solid #d9d9d9;
     display: inline-block;
@@ -214,6 +216,7 @@ model.inference(img=img,device='cpu',show=False,save=True,work_dir='../',name='e
       保存路径对比
   	</div>
 </center>
+
 
 这里我展示一下推理后的路径，其中`pose_test.py`是我的代码文件，`example.png`是推理结果图，可以看到，`example.png`在我的代码文件的外部路径中。
 
@@ -260,7 +263,7 @@ print(result)  # 将结果输出进行分析
 <center>
     <img style="border-radius: 0.3125em;
     box-shadow: 0 2px 4px 0 rgba(34,36,38,.12),0 2px 10px 0 rgba(34,36,38,.08);" 
-    src="picture/inference.png" alt=""/>
+    src="img/pose_inference.png" alt=""/>
     <br>
     <div style="color:orange; border-bottom: 1px solid #d9d9d9;
     display: inline-block;
@@ -269,6 +272,7 @@ print(result)  # 将结果输出进行分析
       对比结果图片与训练数据
   	</div>
 </center>
+
 
 
 
@@ -351,7 +355,7 @@ my_process(result) # 对结果进行处理分析
 <center>
     <img style="border-radius: 0.3125em;
     box-shadow: 0 2px 4px 0 rgba(34,36,38,.12),0 2px 10px 0 rgba(34,36,38,.08);" 
-    src="picture/process_result.png" alt=""/>
+    src="img/pose_process_result.png" alt=""/>
     <br>
     <div style="color:orange; border-bottom: 1px solid #d9d9d9;
     display: inline-block;
@@ -360,6 +364,7 @@ my_process(result) # 对结果进行处理分析
       推理分析result的结果图
   	</div>
 </center>
+
 
 
 
@@ -466,7 +471,7 @@ model.train(epochs=10, validate=True) # 设定训练的epoch次数以及是否�
 <center>
     <img style="border-radius: 0.3125em;
     box-shadow: 0 2px 4px 0 rgba(34,36,38,.12),0 2px 10px 0 rgba(34,36,38,.08);" 
-    src="picture/train.png" alt=""/>
+    src="img/pose_train.png" alt=""/>
     <br>
     <div style="color:orange; border-bottom: 1px solid #d9d9d9;
     display: inline-block;
@@ -475,6 +480,7 @@ model.train(epochs=10, validate=True) # 设定训练的epoch次数以及是否�
       训练模型控制台输出结果
   	</div>
 </center>
+
 
 
 
@@ -503,7 +509,7 @@ model.inference(is_trained=True,
 <center>
     <img style="border-radius: 0.3125em;
     box-shadow: 0 2px 4px 0 rgba(34,36,38,.12),0 2px 10px 0 rgba(34,36,38,.08);" 
-    src="picture/result0.png" alt=""/>
+    src="img/pose_result0.png" alt=""/>
     <br>
     <div style="color:orange; border-bottom: 1px solid #d9d9d9;
     display: inline-block;
@@ -512,6 +518,7 @@ model.inference(is_trained=True,
       使用本体训练模型推理结果
   	</div>
 </center>
+
 
 
 
