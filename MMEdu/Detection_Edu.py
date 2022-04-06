@@ -117,11 +117,11 @@ class MMDetection:
         
     def inference(self, device='cpu',
                   pretrain_model=None,
-                  is_trained=False,
+                  is_trained=True,
                   infer_data=None, show=True, rpn_threshold=0.5, rcnn_threshold=0.3,
         ):
         if not pretrain_model:
-            pretrain_model = os.path.join(self.cwd, 'checkpoints/det_model/latest.pth')
+            pretrain_model = os.path.join(self.cwd, 'checkpoints/det_model/platesssssssssssssssss/latest.pth')
 
         print("========= begin inference ==========")
 
@@ -138,8 +138,11 @@ class MMDetection:
             self.cfg.data.train.classes = self.cfg.classes
             self.cfg.data.test.classes = self.cfg.classes
             self.cfg.data.val.classes = self.cfg.classes
+            self.cfg.model.roi_head.bbox_head.num_classes = len(self.cfg.classes)
+            model = init_detector(self.cfg, checkpoint, device=device)
             model.CLASSES = self.cfg.classes
-        model = init_detector(self.cfg, checkpoint, device=device)
+        else:
+            model = init_detector(self.cfg, checkpoint, device=device)
         model.test_cfg.rpn.nms.iou_threshold = 1 - rpn_threshold
         model.test_cfg.rcnn.nms.iou_threshold = 1 - rcnn_threshold
 
@@ -155,7 +158,6 @@ class MMDetection:
 
         #数据集修正为coco格式
         self.cfg.data.train.img_prefix = os.path.join(self.dataset_path, 'images/train/')
-        print(self.cfg.data.train.img_prefix)
         self.cfg.data.train.ann_file = os.path.join(self.dataset_path, 'annotations/train.json')
 
         self.cfg.data.val.img_prefix = os.path.join(self.dataset_path, 'images/test/')
