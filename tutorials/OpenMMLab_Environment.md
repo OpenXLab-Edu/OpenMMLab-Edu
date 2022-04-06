@@ -175,7 +175,7 @@ conda activate openmmlab 另:如果后续需要退出环境输入conda deactivat
 
 在[pytorch官网](https://pytorch.org/get-started/locally/)找到适合自己的版本
 
-![截屏2022-01-20 14.16.50](/Users/jiayanhao/Desktop/商汤/openmmlab开发文档/markdown用图/截屏2022-01-20 14.16.50.png)
+![pytorch安装](img/pytorch.png)
 
 ​	输入命令安装PyTorch
 
@@ -216,7 +216,7 @@ pip install mmcv
 
 ​	我们推荐使用Pycharm来进行Python编程，这是一个强大的Python IDE，可以帮助你高效的阅读和编辑代码。进入[Pycharm官网](https://www.jetbrains.com/pycharm/download/#section=linux)选择安装免费的社区版或专业版（对于新手开发社区版足够）。
 
-![截屏2022-01-20 14.17.56](/Users/jiayanhao/Desktop/商汤/openmmlab开发文档/markdown用图/截屏2022-01-20 14.17.56.png)
+![pycharm安装](img/pycharm.png)
 
 ​	下载结束后，在terminal中输入以下命令：
 
