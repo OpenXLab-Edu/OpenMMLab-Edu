@@ -64,11 +64,14 @@ model.inference(img=img, device='cpu') # 在cpu上进行推理
 
 在Detection_Edu中对于`inference`函数还有其他的传入参数，在这里进行说明：
 
+
 `rpn_threshold` & `rcnn_threshold`: 0～1之间的数值。由于FasterRCNN为一个两阶段的检测模型，这两个参数分别表示两个阶段对于检测框的保留程度，高于这个数值的框将会被保留（这里如果同学们设置过低，也可能会发现图中出现了多个框）。
 
 `show`：布尔值，默认为`True`，表示推理后是否显示推理结果。
 
+
 `is_trained`: 是否使用本地预训练的其他模型进行训练（`True/False`），我们会默认加载FasterRCNN上在COCO数据集的模型权重，如果同学们进行了自己数据集的训练，请大家将该参数设为`False`，并在下一个参数传入模型路径。
+
 
 `pretrain_model`：默认为`None`， 如果需要从自己的模型进行推理，请大家传入自己的模型路径。
 
@@ -76,11 +79,14 @@ model.inference(img=img, device='cpu') # 在cpu上进行推理
 
 我们将进行车牌的检测，这里我展示一下推理后的结果：
 
+
 <img src="C:\Users\Jx_G\Desktop\mmedu_base\mmedu_base\tutorials\imgs\image-20220408191521436.png" alt="image-20220408191521436" style="zoom:40%;" />
+
 
 #### 2.训练模型
 
 使用下面的代码即可简单体验Detection_Edu的训练过程，我们以车牌的识别为例，为您进行详细的介绍。
+
 
 
 在运行代码之前，您需要先拥有一个数据集，这里我们为您提供车牌检测数据集。
@@ -88,6 +94,7 @@ model.inference(img=img, device='cpu') # 在cpu上进行推理
 数据集文件结构如下：
 
 ![image-20220408210420560](C:\Users\Jx_G\Desktop\mmedu_base\mmedu_base\tutorials\imgs\image-20220408210420560.png)
+
 
 - 代码展示
 
@@ -117,7 +124,6 @@ model.load_dataset(path='../dataset/det/coco') # 从指定数据集路径中加�
 model = MMdetection() # 实例化模型，不指定参数即使用默认参数。
 model.load_dataset(path='../dataset/det/coco') # 从指定数据集路径中加载数据
 ~~~
-
 
 上面两行代码和`model = MMdetection(dataset_path='../dataset/det/coco')`这一行代码所实现的结果是一样的。
 
@@ -150,9 +156,11 @@ model.train(epochs=10, validate=True) # 设定训练的epoch次数以及是否�
 
 `checkpoint`: 默认为'None'，表示在训练过程中使用初始化权重。如果使用训练得到的模型（或预训练模型），此参数传入一个模型路径，我们的训练将基于传入的模型参数继续训练。
 
+
 执行上述代码之后的运行结果如下图
 
 <img src="C:\Users\Jx_G\Desktop\mmedu_base\mmedu_base\tutorials\imgs\image-20220408211213751.png" alt="image-20220408211213751" style="zoom:60%;" />
+
 
 
 
@@ -173,7 +181,6 @@ model.inference(is_trained=True,
 在这里，我们重点介绍`inference`这个函数的其他参数，可以看到和[直接推理](####1.直接推理)这一步的代码相比，`inference`中多了两个没见过的参数，分别是`is_trained`和`pretrain_model`，`is_trained`是一个布尔值，为`True`时代表从本地训练过的模型中进行推理，而`is_trained`设置为True之后则需要指定加载模型的路径，这也就是`pretrain_model`这个参数的作用，我们会从`pretrain_model`中加载模型进行推理，然后展示推理结果（如下图）。
 
 <img src="C:\Users\Jx_G\Desktop\mmedu_base\mmedu_base\tutorials\imgs\image-20220408191108835.png" alt="image-20220408191108835" style="zoom:45%;" />
-
 
 #### 4.继续训练
 

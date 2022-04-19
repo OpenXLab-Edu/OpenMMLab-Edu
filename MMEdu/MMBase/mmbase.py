@@ -1,7 +1,7 @@
 import torch
 import torch.nn as nn
 from torch.autograd import Variable
-# import numpy
+import numpy
 
 class Reshape(nn.Module):
     def __init__(self, *args):
