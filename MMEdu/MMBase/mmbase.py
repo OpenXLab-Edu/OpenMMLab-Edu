@@ -1,7 +1,7 @@
 import torch
 import torch.nn as nn
 from torch.autograd import Variable
-
+import numpy
 
 class Reshape(nn.Module):
     def __init__(self, *args):
@@ -69,7 +69,7 @@ class MMBase:
         return res
 
     def print_model(self):
-        print('模型共{}层'.format(self.layers_num))
+        # print('模型共{}层'.format(self.layers_num))
         print(self.model)
 
     def save(self, model_path='mmbase_net.pkl'):
@@ -93,7 +93,7 @@ def test1():
     model.add_layer('Conv', 3, 10, 3, 3) # [100, 10, 7, 7]
     model.add_layer('AvgPool', 2) # [100, 10, 3, 3]
     model.add_layer('Reshape') # [100, 90]
-    model.add_layer('Linear', 90, 10)
+    model.add_layer('Linear', 90, 10) # [100, 10]
     model.add_layer('ReLU')
     model.add_layer('Linear', 10, 2)
     model.add_layer('ReLU')
