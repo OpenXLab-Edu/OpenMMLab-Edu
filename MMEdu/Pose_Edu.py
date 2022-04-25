@@ -45,8 +45,6 @@ class MMPose:
                 self.pose_config = os.path.join(backbone_path, item)
             elif item[-1] == 'h':
                 self.pose_checkpoint = os.path.join(backbone_path, item)
-            else:
-                print("Warning!!! There is an unrecognized file in the backbone folder.")
 
         self.cfg_det = Config.fromfile(self.det_config)
         self.cfg = Config.fromfile(self.pose_config)
@@ -57,8 +55,12 @@ class MMPose:
 
 
     def train(self, random_seed=0, save_fold=None, checkpoint = None, distributed=False, validate=True,
-              metric='PCK', save_best = 'PCK',optimizer="Adam", epochs=100, lr=1e-4):
-
+              metric='PCK', save_best = 'PCK',optimizer="Adam", epochs=100, lr=5e-4,
+              resume_from = None,
+              eval_interval = 10,
+              log_interval = 5,
+              ):
+        print("========= begin training ==========")
         # 如果外部不指定save_fold
         if not self.save_fold:
             # 如果外部也没有传入save_fold，我们使用默认路径
@@ -73,16 +75,21 @@ class MMPose:
         self.cfg.gpu_ids = range(1)
         self.cfg.work_dir = self.save_fold
         self.cfg.load_from = checkpoint
+        self.cfg.resume_from = resume_from
         self.cfg.seed = random_seed
-        # self.cfg.model.backbone.frozen_stages = Frozen_stages
-        # set log interval
-        self.cfg.log_config.interval = 1
-        self.cfg.total_epochs = epochs  # 最大的训练轮次
-        self.cfg.optimizer.lr = lr  # 学习率
-        self.cfg.optimizer.type = optimizer  # 优化器
+
+        self.cfg.evaluation.interval = eval_interval
         self.cfg.evaluation.metric = metric  # 验证指标
         self.cfg.evaluation.save_best = save_best  # 验证指标
     
+
+        # self.cfg.model.backbone.frozen_stages = Frozen_stages
+        # set log interval
+        self.cfg.log_config.interval = log_interval
+        self.cfg.total_epochs = epochs  # 最大的训练轮次
+        self.cfg.optimizer.lr = lr  # 学习率
+        self.cfg.optimizer.type = optimizer  # 优化器
+
         datasets = [build_dataset(self.cfg.data.train)]
 
         # build model
@@ -94,7 +101,7 @@ class MMPose:
         # train model
         train_model(
             model, datasets, self.cfg, distributed=distributed, validate=validate, meta=dict())
-
+        print("========= finish training ==========")
         return None
 
     def _inference(self,det_model,pose_model,img,work_dir,name,show,i):
@@ -125,7 +132,6 @@ class MMPose:
                   pretrain_model='./checkpoints/pose_model/latest.pth',
                   img=None,
                   show=False,
-                  save=True,
                   work_dir='./img_result/',
                   name='pose_result'):
         """
@@ -135,7 +141,6 @@ class MMPose:
             pretrain_model: 如果使用其他模型，则传入模型路径
             img: 推理图片的路径或文件夹名
             show: 是否对推理结果进行显示
-            save: 是否对推理结果进行保存
             work_dir: 推理结果图片的保存文件夹
             name: 推理结果保存的名字
         return:
@@ -155,16 +160,18 @@ class MMPose:
         det_model = init_detector(self.det_config, self.det_checkpoint,device=device)
 
 
-        # inference pose
+        # inference img
         if img[-1:] != '/':
             pose_results = self._inference(det_model,pose_model,img,work_dir,name,show,0)
-            return pose_results
+            print('Image result is save as %s.png' % (name))
 
         else:
-        # show pose estimation results
+        # inference directory
             img_dir = img
+            print("inference for directory: %s \n" % (img_dir))
             for i,img in enumerate(tqdm(os.listdir(img_dir))):
                 pose_results = self._inference(det_model,pose_model,img_dir+img,work_dir,name,show,i)
+            print('Finish! Image result is save in %s \n' % (work_dir))
         return pose_results
 
     def load_dataset(self, path):
