@@ -127,7 +127,81 @@ class StepLrUpdaterHook(LrUpdaterHook):
 
 
 
-###3.visualization(可视化)
+### 3.evaluation
+
+```python
+class EvalHook(Hook):
+  	"""
+  		关键词:
+  			evaluation 评估 简写eval
+  		功能: 
+  			MMCV实现的性能效率评估器
+  		意义: 
+  			通过在训练过程中对测试集进行评估, 来达到衡量模型性能优劣的意义, 若准确度已经ok则可以直接终止训练节约时间, 反之也可以帮助调节学习率等多个超参数的微调
+  		源码路径: 
+				anaconda/envs/openmmlab/lib/python3.9/site-packages/mmcv/runner/hooks/evaluation.py
+	
+	参数:
+		dataloader (DataLoader): 
+			pytorch数据加载器, 实现了评估功能
+
+    start (int | None, optional): 
+    	评估开始的轮数, 若start数值<恢复的轮数则在训练开始前启动评估, 若值为空则是否评估仅由interval参数决定, 默认为空
+    	
+    interval (int): 
+    	评估的间隔轮数, 默认为1, 即每轮都进行评估
+    	
+    by_epoch (bool): 
+    	决定根据epoch来评估还是根据iter来评估, 若为True则根据epoch评估, 反之根据iter评估, 默认为True
+    	
+    save_best (str, optional): 
+    	如果指定了一个评估指标, 它将在验证期间评估最佳checkpoints
+    	有关最佳checkpoints的信息将保存'runner.meta['hook_msgs']'中, 用以保留最高score和最佳checkpoints路径, 恢复						checkpoints时也会加载这些值。选项是测试数据集上的评估指标, 例如'bbox_-mAP'和'segm_-mAP'分别用于bbox检测和实例分割, 					'AR@100'建议用于评估召回率。若参数为auto, 则将使用返回的OrderedDict结果的第一个键值
+    	默认为空
+    	
+    rule (str | None, optional): 
+    	最优效果的评价规则, 若为None，则将自动给出合理的规则
+    	如acc, top等关键字将由greater规则推断, 包含loss的关键字将由less规则推断
+    	选项有greater, less, None,  默认为None
+    
+		test_fn (callable, optional): 
+			使用数据加载器中的样本测试模型，并返回测试结果
+			若为空则默认测试函数为mmcv.engine.single_gpu_test
+			默认为None
+			
+    greater_keys (List[str] | None, optional): 
+    	将由greater比较规则推断的度量键, 若为Null则使用默认键
+    	默认为None
+    	
+    less_keys (List[str] | None, optional): 
+    	将由less比较规则推断的度量键, 若为Null则使用默认键
+    	默认为None
+    	
+    out_dir (str, optional): 
+    	保存checkpoints的根目录, 若未指定则为'runner'
+    	默认情况下将使用work_dir, 若指定，out_dir将是out_dir和runner最后一级目录的串联
+    	默认为None
+    	
+    file_client_args (dict): 
+    	用于实例化FileClient的参数
+    	具体信息见mmcv.fileio.FileClient
+    	默认为None
+    	
+    """
+
+    
+#具体用法:
+#在对应网络的配置文件中声明evaluation字典
+
+evaluation = dict(interval=1, metric='accuracy')
+
+evaluation = dict(start=5, by_epoch=True, interval=5, metric='mAP', save_best='Total AP')
+    
+```
+
+
+
+### 4.visualization(可视化)
 
 ```python
 #mmcv可以展示图像以及标注（目前只支持标注框）
@@ -154,7 +228,7 @@ mmcv.flowshow(flow)
 
 
 
-### 4.dataset(数据集)
+### 5.dataset(数据集)
 
 ```python
 class BaseDataset(Dataset, metaclass=ABCMeta):
@@ -196,7 +270,120 @@ class BaseDataset(Dataset, metaclass=ABCMeta):
 
 
 
-### .示例
+### 6.pipeline(数据处理流程)
+
+```python
+"""
+	介绍:
+		MMClassification的数据处理流程
+		因为每个模块对应的数据集都不相同, 因此部分预处理操作不相同, 在cls模块出现过的不会再重复
+	功能: 
+  	MMClassification实现的基础数据集类
+  源码路径: 
+  	anaconda/envs/openmmlab/lib/python3.9/site-packages/mmcls/datasets/pipeline/transforms.py
+"""
+
+class RandomCrop(object):
+	"""
+		功能:
+			将图像以随机位置裁剪
+  	参数:
+        size (sequence or int): Desired output size of the crop. If size is an
+            int instead of sequence like (h, w), a square crop (size, size) is
+            made.
+            
+        padding (int or sequence, optional): 
+        	Optional padding on each border of the image. If a sequence of length 4 is provided, it is used to pad 					left, top, right, bottom borders respectively.  If a sequence of length 2 is provided, it is used to pad 					left/right, top/bottom borders, respectively. Default: None, which means no padding.
+        	
+        pad_if_needed (boolean):
+        	It will pad the image if smaller than thedesired size to avoid raising an exception. Since cropping is 					done after padding, the padding seems to be done at a random offset.
+            默认为否
+            
+        pad_val (Number | Sequence[Number]): 
+        	Pixel pad_val value for constant fill. If a tuple of length 3, it is used to pad_val R, G, B channels respectively. 
+        	默认为0
+        	
+        padding_mode (str): 
+        	Type of padding. Defaults to "constant". Should be one of the following:
+        	
+            - constant: Pads with a constant value, this value is specified \
+                with pad_val.
+            - edge: pads with the last value at the edge of the image.
+            - reflect: Pads with reflection of image without repeating the \
+                last value on the edge. For example, padding [1, 2, 3, 4] \
+                with 2 elements on both sides in reflect mode will result \
+                in [3, 2, 1, 2, 3, 4, 3, 2].
+            - symmetric: Pads with reflection of image repeating the last \
+                value on the edge. For example, padding [1, 2, 3, 4] with \
+                2 elements on both sides in symmetric mode will result in \
+                [2, 1, 1, 2, 3, 4, 4, 3].
+    """
+  
+class RandomResizedCrop(object):  
+  
+  
+class RandomGrayscale(object):
+    
+  
+class RandomFlip(object):
+    
+  
+class RandomErasing(object):
+  
+  
+class Pad(object):
+  
+ 
+class Resize(object):
+  
+ 
+class CenterCrop(object):
+  
+  
+class Normalize(object):
+  
+  
+class ColorJitter(object):
+  
+  
+class Lighting(object):
+  
+  
+class Albu(object):
+  
+  
+'''
+cls end
+'''
+
+
+
+'''
+det start
+'''
+
+
+'''
+det end
+'''
+
+
+
+'''
+seg start
+'''
+
+
+'''
+seg end
+'''
+```
+
+
+
+
+
+### x.配置文件示例
 
 ```python
 model = dict(
