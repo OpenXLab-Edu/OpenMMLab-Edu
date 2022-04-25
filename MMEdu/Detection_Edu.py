@@ -7,8 +7,9 @@ from mmdet.apis import inference_detector, init_detector, show_result_pyplot, tr
 from mmdet.models import build_detector
 from mmdet.datasets import build_dataset
 from mmcv.runner import load_checkpoint
-
-
+from tqdm import tqdm
+import warnings
+warnings.filterwarnings("ignore")
 
 class MMDetection:
     def __init__(self, 
@@ -118,7 +119,11 @@ class MMDetection:
     def inference(self, device='cpu',
                   pretrain_model=None,
                   is_trained=True,
-                  infer_data=None, show=True, rpn_threshold=0.5, rcnn_threshold=0.3,
+                  infer_data=None, 
+                  show=True,  
+                  rpn_threshold=0.5, 
+                  rcnn_threshold=0.3,
+                  save_fold='det_result',
         ):
         if not pretrain_model:
             pretrain_model = os.path.join(self.cwd, 'checkpoints/det_model/plate/latest.pth')
@@ -146,11 +151,21 @@ class MMDetection:
         model.test_cfg.rpn.nms.iou_threshold = 1 - rpn_threshold
         model.test_cfg.rcnn.nms.iou_threshold = 1 - rcnn_threshold
 
-        img_array = mmcv.imread(infer_data)
-        result = inference_detector(model, img_array) # 此处的model和外面的无关,纯局部变量
-        if show == True:
-            show_result_pyplot(model, infer_data, result)
-        return result
+        results = []
+        if(infer_data[-1]!='/'):
+            img_array = mmcv.imread(infer_data)
+            result = inference_detector(model, img_array) # 此处的model和外面的无关,纯局部变量
+            if show == True:
+                show_result_pyplot(model, infer_data, result)
+            return result
+        else:
+            img_dir = infer_data
+            mmcv.mkdir_or_exist(os.path.abspath(save_fold))
+            for i,img in enumerate(tqdm(os.listdir(img_dir))):
+                result = inference_detector(model,img_dir+ img) # 此处的model和外面的无关,纯局部变量
+                model.show_result(img_dir+img,result, out_file=os.path.join(save_fold,img))
+                results.append(result)
+        return results
 
 
     def load_dataset(self, path):
