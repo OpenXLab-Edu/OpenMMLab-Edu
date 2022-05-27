@@ -6,7 +6,7 @@ data = dict(
     drop_last=False,
     train=dict(
         type=dataset_type,
-        img_path='./data/singan/balloons.png',  # need to set
+        img_path='../dataset/gen/balloons.png',  # need to set
         min_size=25,
         max_size=250,
         scale_factor_init=0.75))
@@ -54,15 +54,15 @@ train_cfg = dict(
     lr_g=0.0005,
     lr_scheduler_args=dict(milestones=[1600], gamma=0.1))
 
-# test_cfg = None
-test_cfg = dict(
-    _delete_ = True,
-    pkl_data = '1/models/SinGAN/singan_balloons_20210406_191047-8fcd94cf.pkl'
-)
+test_cfg = None
+# test_cfg = dict(
+#     _delete_ = True,
+#     pkl_data = '../singan_balloons.pkl'
+# )
 
 optimizer = None
 lr_config = None
-checkpoint_config = dict(by_epoch=False, interval=2000, max_keep_ckpts=3)
+checkpoint_config = dict(by_epoch=False, interval=2000, max_keep_ckpts=8)
 
 custom_hooks = [
     dict(
@@ -93,14 +93,14 @@ log_config = dict(
 # use dynamic runner
 runner = dict(
     type='DynamicIterBasedRunner',
-    is_dynamic_ddp=True,
+    is_dynamic_ddp=False,
     pass_training_status=True)
 
 dist_params = dict(backend='nccl')
 log_level = 'INFO'
 load_from = None
 resume_from = None
-workflow = [('train', 10000)]
+workflow = [('train', 1000)]
 find_unused_parameters = True
 cudnn_benchmark = True
 
