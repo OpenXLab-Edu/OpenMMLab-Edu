@@ -1,0 +1,184 @@
+2022-05-31 17:48:07,902 - mmgen - INFO - FID: Adopt Inception in pytorch style
+2022-05-31 17:48:07,902 - mmgen - INFO - Loading Inception V3 for IS...
+2022-05-31 17:48:22,062 - mmgen - INFO - Load Inception V3 Network from Pytorch Model Zoo for IS calculation. The results can only used for monitoring purposes. To get more accuracy IS, please use Tero's Inception V3 checkpoints and use Bicubic Interpolation with Pillow backend for image resizing. More details may refer to https://github.com/open-mmlab/mmgeneration/blob/master/docs/en/quick_run.md#is.
+2022-05-31 17:48:22,092 - mmgen - INFO - Start running, host: PJLAB\gaojianxiong@shai14001330l, work_dir: /home/PJLAB/gaojianxiong/Desktop/OpenMMLab-Edu/checkpoints/gen_model
+2022-05-31 17:48:22,092 - mmgen - INFO - Hooks will be executed in the following order:
+before_run:
+(NORMAL      ) CheckpointHook                     
+(LOW         ) TranslationEvalHook                
+(VERY_LOW    ) TextLoggerHook                     
+ -------------------- 
+before_train_epoch:
+(LOW         ) IterTimerHook                      
+(VERY_LOW    ) TextLoggerHook                     
+ -------------------- 
+before_train_iter:
+(LOW         ) IterTimerHook                      
+ -------------------- 
+after_train_iter:
+(NORMAL      ) CheckpointHook                     
+(NORMAL      ) VisualizationHook                  
+(LOW         ) IterTimerHook                      
+(LOW         ) TranslationEvalHook                
+(VERY_LOW    ) TextLoggerHook                     
+ -------------------- 
+after_train_epoch:
+(NORMAL      ) CheckpointHook                     
+(VERY_LOW    ) TextLoggerHook                     
+ -------------------- 
+before_val_epoch:
+(LOW         ) IterTimerHook                      
+(VERY_LOW    ) TextLoggerHook                     
+ -------------------- 
+before_val_iter:
+(LOW         ) IterTimerHook                      
+ -------------------- 
+after_val_iter:
+(LOW         ) IterTimerHook                      
+ -------------------- 
+after_val_epoch:
+(VERY_LOW    ) TextLoggerHook                     
+ -------------------- 
+after_run:
+(VERY_LOW    ) TextLoggerHook                     
+ -------------------- 
+2022-05-31 17:48:22,092 - mmgen - INFO - workflow: [('train', 10000)], max: 5000 iters
+2022-05-31 17:48:22,092 - mmgen - INFO - Checkpoints will be saved to ../checkpoints/gen_model/ckpt/gen_model by HardDiskBackend.
+2022-05-31 17:48:37,645 - mmgen - INFO - Saving checkpoint at 100 iterations
+2022-05-31 17:48:38,403 - mmgen - INFO - Iter [100/5000]	lr_generators: 2.000e-03 lr_discriminators: 2.000e-03, eta: 0:13:14, time: 0.162, data_time: 0.002, memory: 1347, loss_gan_d_fake: 1.0598, loss_gan_d_real: 0.9432, loss: 36.4867, loss_gan_g: 1.0495, pixel_loss: 35.4371
+2022-05-31 17:48:53,620 - mmgen - INFO - Saving checkpoint at 200 iterations
+2022-05-31 17:48:54,363 - mmgen - INFO - Iter [200/5000]	lr_generators: 2.000e-03 lr_discriminators: 2.000e-03, eta: 0:12:52, time: 0.160, data_time: 0.001, memory: 1347, loss_gan_d_fake: 0.7279, loss_gan_d_real: 0.7596, loss: 27.6206, loss_gan_g: 1.2002, pixel_loss: 26.4204
+2022-05-31 17:49:09,621 - mmgen - INFO - Saving checkpoint at 300 iterations
+2022-05-31 17:49:10,372 - mmgen - INFO - Feed reals to FID metric.
+2022-05-31 17:49:12,414 - mmgen - INFO - Sample 200 fake images for evaluation
+2022-05-31 17:49:12,540 - mmgen - INFO - `use_pil_resize` is set as True, apply Bicubic interpolation with Pillow backend. We perform type conversion between torch.tensor and PIL.Image in this function and make this process a little bit slow.
+2022-05-31 17:49:26,292 - mmgen - INFO - Now best checkpoint is saved as best_fid_iter_300.pth.
+2022-05-31 17:49:26,292 - mmgen - INFO - Best fid is 312.8240 at iter_300.
+2022-05-31 17:49:27,013 - mmgen - INFO - Now best checkpoint is saved as best_is_iter_300.pth.
+2022-05-31 17:49:27,013 - mmgen - INFO - Best is is 3.1081 at iter_300.
+2022-05-31 17:49:27,015 - mmgen - INFO - Iter(val) [300]	fid: 312.8240, fid_mean: 159.31105041503906, fid_cov: 153.5130, is: 3.1080729961395264, is_std: 0.29888075590133667
+2022-05-31 17:49:42,342 - mmgen - INFO - Saving checkpoint at 400 iterations
+2022-05-31 17:49:43,100 - mmgen - INFO - Iter [400/5000]	lr_generators: 2.000e-03 lr_discriminators: 2.000e-03, eta: 0:12:26, time: 0.327, data_time: 0.168, memory: 1347, loss_gan_d_fake: 0.5298, loss_gan_d_real: 0.5983, loss: 25.8544, loss_gan_g: 1.6052, pixel_loss: 24.2492
+2022-05-31 17:49:58,430 - mmgen - INFO - Saving checkpoint at 500 iterations
+2022-05-31 17:49:59,177 - mmgen - INFO - Iter [500/5000]	lr_generators: 2.000e-03 lr_discriminators: 2.000e-03, eta: 0:12:08, time: 0.161, data_time: 0.001, memory: 1347, loss_gan_d_fake: 0.5557, loss_gan_d_real: 0.5986, loss: 23.6251, loss_gan_g: 1.6419, pixel_loss: 21.9833
+2022-05-31 17:50:14,536 - mmgen - INFO - Saving checkpoint at 600 iterations
+2022-05-31 17:50:15,290 - mmgen - INFO - Sample 200 fake images for evaluation
+2022-05-31 17:50:29,341 - mmgen - INFO - Now best checkpoint is saved as best_fid_iter_600.pth.
+2022-05-31 17:50:29,341 - mmgen - INFO - Best fid is 307.0238 at iter_600.
+2022-05-31 17:50:29,350 - mmgen - INFO - Iter(val) [600]	fid: 307.0238, fid_mean: 159.30206298828125, fid_cov: 147.7217, is: 2.715604066848755, is_std: 0.33385008573532104
+2022-05-31 17:50:44,726 - mmgen - INFO - Saving checkpoint at 700 iterations
+2022-05-31 17:50:45,468 - mmgen - INFO - Iter [700/5000]	lr_generators: 2.000e-03 lr_discriminators: 2.000e-03, eta: 0:11:22, time: 0.302, data_time: 0.142, memory: 1347, loss_gan_d_fake: 0.4983, loss_gan_d_real: 0.5556, loss: 24.5054, loss_gan_g: 1.6341, pixel_loss: 22.8713
+2022-05-31 17:51:00,848 - mmgen - INFO - Saving checkpoint at 800 iterations
+2022-05-31 17:51:01,601 - mmgen - INFO - Iter [800/5000]	lr_generators: 2.000e-03 lr_discriminators: 2.000e-03, eta: 0:11:08, time: 0.161, data_time: 0.001, memory: 1347, loss_gan_d_fake: 0.5366, loss_gan_d_real: 0.5873, loss: 23.5248, loss_gan_g: 1.5845, pixel_loss: 21.9403
+2022-05-31 17:51:17,141 - mmgen - INFO - Saving checkpoint at 900 iterations
+2022-05-31 17:51:17,893 - mmgen - INFO - Sample 200 fake images for evaluation
+2022-05-31 17:51:31,752 - mmgen - INFO - Now best checkpoint is saved as best_fid_iter_900.pth.
+2022-05-31 17:51:31,752 - mmgen - INFO - Best fid is 253.1443 at iter_900.
+2022-05-31 17:51:31,762 - mmgen - INFO - Iter(val) [900]	fid: 253.1443, fid_mean: 124.21800231933594, fid_cov: 128.9263, is: 2.8649590015411377, is_std: 0.23682187497615814
+2022-05-31 17:51:47,065 - mmgen - INFO - Saving checkpoint at 1000 iterations
+2022-05-31 17:51:47,812 - mmgen - INFO - Iter [1000/5000]	lr_generators: 2.000e-03 lr_discriminators: 2.000e-03, eta: 0:10:28, time: 0.299, data_time: 0.140, memory: 1347, loss_gan_d_fake: 0.5120, loss_gan_d_real: 0.5547, loss: 24.9183, loss_gan_g: 1.6681, pixel_loss: 23.2502
+2022-05-31 17:52:03,102 - mmgen - INFO - Saving checkpoint at 1100 iterations
+2022-05-31 17:52:03,848 - mmgen - INFO - Iter [1100/5000]	lr_generators: 2.000e-03 lr_discriminators: 2.000e-03, eta: 0:10:14, time: 0.160, data_time: 0.001, memory: 1347, loss_gan_d_fake: 0.4861, loss_gan_d_real: 0.5152, loss: 25.9222, loss_gan_g: 1.7867, pixel_loss: 24.1355
+2022-05-31 17:52:19,143 - mmgen - INFO - Saving checkpoint at 1200 iterations
+2022-05-31 17:52:19,884 - mmgen - INFO - Sample 200 fake images for evaluation
+2022-05-31 17:52:33,593 - mmgen - INFO - Now best checkpoint is saved as best_fid_iter_1200.pth.
+2022-05-31 17:52:33,593 - mmgen - INFO - Best fid is 237.9683 at iter_1200.
+2022-05-31 17:52:33,604 - mmgen - INFO - Iter(val) [1200]	fid: 237.9683, fid_mean: 112.40650177001953, fid_cov: 125.5618, is: 2.8196449279785156, is_std: 0.19235891103744507
+2022-05-31 17:52:48,910 - mmgen - INFO - Saving checkpoint at 1300 iterations
+2022-05-31 17:52:49,661 - mmgen - INFO - Iter [1300/5000]	lr_generators: 2.000e-03 lr_discriminators: 2.000e-03, eta: 0:09:37, time: 0.298, data_time: 0.139, memory: 1347, loss_gan_d_fake: 0.5116, loss_gan_d_real: 0.5441, loss: 23.7375, loss_gan_g: 1.6247, pixel_loss: 22.1128
+2022-05-31 17:53:04,958 - mmgen - INFO - Saving checkpoint at 1400 iterations
+2022-05-31 17:53:05,701 - mmgen - INFO - Iter [1400/5000]	lr_generators: 2.000e-03 lr_discriminators: 2.000e-03, eta: 0:09:23, time: 0.160, data_time: 0.001, memory: 1347, loss_gan_d_fake: 0.5012, loss_gan_d_real: 0.5438, loss: 22.6201, loss_gan_g: 1.5788, pixel_loss: 21.0412
+2022-05-31 17:53:20,994 - mmgen - INFO - Saving checkpoint at 1500 iterations
+2022-05-31 17:53:21,735 - mmgen - INFO - Sample 200 fake images for evaluation
+2022-05-31 17:53:35,630 - mmgen - INFO - Now best checkpoint is saved as best_fid_iter_1500.pth.
+2022-05-31 17:53:35,630 - mmgen - INFO - Best fid is 221.6268 at iter_1500.
+2022-05-31 17:53:35,640 - mmgen - INFO - Iter(val) [1500]	fid: 221.6268, fid_mean: 99.01695251464844, fid_cov: 122.6099, is: 3.0590739250183105, is_std: 0.31085801124572754
+2022-05-31 17:53:50,946 - mmgen - INFO - Saving checkpoint at 1600 iterations
+2022-05-31 17:53:51,698 - mmgen - INFO - Iter [1600/5000]	lr_generators: 2.000e-03 lr_discriminators: 2.000e-03, eta: 0:08:49, time: 0.300, data_time: 0.140, memory: 1347, loss_gan_d_fake: 0.4591, loss_gan_d_real: 0.5352, loss: 24.7717, loss_gan_g: 1.6897, pixel_loss: 23.0820
+2022-05-31 17:54:07,001 - mmgen - INFO - Saving checkpoint at 1700 iterations
+2022-05-31 17:54:07,769 - mmgen - INFO - Iter [1700/5000]	lr_generators: 2.000e-03 lr_discriminators: 2.000e-03, eta: 0:08:34, time: 0.161, data_time: 0.001, memory: 1347, loss_gan_d_fake: 0.4984, loss_gan_d_real: 0.5663, loss: 23.5389, loss_gan_g: 1.6711, pixel_loss: 21.8678
+2022-05-31 17:54:23,092 - mmgen - INFO - Saving checkpoint at 1800 iterations
+2022-05-31 17:54:23,832 - mmgen - INFO - Sample 200 fake images for evaluation
+2022-05-31 17:54:37,514 - mmgen - INFO - Now best checkpoint is saved as best_fid_iter_1800.pth.
+2022-05-31 17:54:37,514 - mmgen - INFO - Best fid is 189.2434 at iter_1800.
+2022-05-31 17:54:37,524 - mmgen - INFO - Iter(val) [1800]	fid: 189.2434, fid_mean: 83.537109375, fid_cov: 105.7063, is: 2.7331349849700928, is_std: 0.3289635479450226
+2022-05-31 17:54:52,832 - mmgen - INFO - Saving checkpoint at 1900 iterations
+2022-05-31 17:54:53,582 - mmgen - INFO - Iter [1900/5000]	lr_generators: 2.000e-03 lr_discriminators: 2.000e-03, eta: 0:08:01, time: 0.297, data_time: 0.138, memory: 1347, loss_gan_d_fake: 0.4868, loss_gan_d_real: 0.5322, loss: 24.7417, loss_gan_g: 1.6487, pixel_loss: 23.0930
+2022-05-31 17:55:08,897 - mmgen - INFO - Saving checkpoint at 2000 iterations
+2022-05-31 17:55:09,646 - mmgen - INFO - Iter [2000/5000]	lr_generators: 2.000e-03 lr_discriminators: 2.000e-03, eta: 0:07:46, time: 0.161, data_time: 0.001, memory: 1347, loss_gan_d_fake: 0.4441, loss_gan_d_real: 0.5423, loss: 25.2084, loss_gan_g: 1.6723, pixel_loss: 23.5361
+2022-05-31 17:55:24,969 - mmgen - INFO - Saving checkpoint at 2100 iterations
+2022-05-31 17:55:25,717 - mmgen - INFO - Sample 200 fake images for evaluation
+2022-05-31 17:55:39,457 - mmgen - INFO - Now best checkpoint is saved as best_fid_iter_2100.pth.
+2022-05-31 17:55:39,457 - mmgen - INFO - Best fid is 165.9183 at iter_2100.
+2022-05-31 17:55:39,467 - mmgen - INFO - Iter(val) [2100]	fid: 165.9183, fid_mean: 69.16741943359375, fid_cov: 96.7508, is: 2.5810704231262207, is_std: 0.24605412781238556
+2022-05-31 17:55:54,778 - mmgen - INFO - Saving checkpoint at 2200 iterations
+2022-05-31 17:55:55,529 - mmgen - INFO - Iter [2200/5000]	lr_generators: 2.000e-03 lr_discriminators: 2.000e-03, eta: 0:07:13, time: 0.298, data_time: 0.139, memory: 1347, loss_gan_d_fake: 0.4401, loss_gan_d_real: 0.5486, loss: 24.6227, loss_gan_g: 1.5939, pixel_loss: 23.0288
+2022-05-31 17:56:10,845 - mmgen - INFO - Saving checkpoint at 2300 iterations
+2022-05-31 17:56:11,622 - mmgen - INFO - Iter [2300/5000]	lr_generators: 2.000e-03 lr_discriminators: 2.000e-03, eta: 0:06:58, time: 0.161, data_time: 0.001, memory: 1347, loss_gan_d_fake: 0.4772, loss_gan_d_real: 0.5567, loss: 25.0997, loss_gan_g: 1.6449, pixel_loss: 23.4549
+2022-05-31 17:56:26,945 - mmgen - INFO - Saving checkpoint at 2400 iterations
+2022-05-31 17:56:27,691 - mmgen - INFO - Sample 200 fake images for evaluation
+2022-05-31 17:56:40,581 - mmgen - INFO - Iter(val) [2400]	fid: 167.2775, fid_mean: 68.69795989990234, fid_cov: 98.5795, is: 2.7732090950012207, is_std: 0.26416221261024475
+2022-05-31 17:56:55,993 - mmgen - INFO - Saving checkpoint at 2500 iterations
+2022-05-31 17:56:56,743 - mmgen - INFO - Iter [2500/5000]	lr_generators: 2.000e-03 lr_discriminators: 2.000e-03, eta: 0:06:25, time: 0.291, data_time: 0.130, memory: 1347, loss_gan_d_fake: 0.5188, loss_gan_d_real: 0.6074, loss: 23.1718, loss_gan_g: 1.5032, pixel_loss: 21.6686
+2022-05-31 17:57:12,066 - mmgen - INFO - Saving checkpoint at 2600 iterations
+2022-05-31 17:57:12,823 - mmgen - INFO - Iter [2600/5000]	lr_generators: 2.000e-03 lr_discriminators: 2.000e-03, eta: 0:06:11, time: 0.161, data_time: 0.001, memory: 1347, loss_gan_d_fake: 0.4879, loss_gan_d_real: 0.5566, loss: 24.7415, loss_gan_g: 1.5191, pixel_loss: 23.2224
+2022-05-31 17:57:28,147 - mmgen - INFO - Saving checkpoint at 2700 iterations
+2022-05-31 17:57:28,903 - mmgen - INFO - Sample 200 fake images for evaluation
+2022-05-31 17:57:40,936 - mmgen - INFO - Iter(val) [2700]	fid: 189.1931, fid_mean: 81.33961486816406, fid_cov: 107.8534, is: 2.6748876571655273, is_std: 0.3129672706127167
+2022-05-31 17:57:56,232 - mmgen - INFO - Saving checkpoint at 2800 iterations
+2022-05-31 17:57:56,979 - mmgen - INFO - Iter [2800/5000]	lr_generators: 2.000e-03 lr_discriminators: 2.000e-03, eta: 0:05:37, time: 0.281, data_time: 0.122, memory: 1347, loss_gan_d_fake: 0.4565, loss_gan_d_real: 0.5511, loss: 24.3310, loss_gan_g: 1.5134, pixel_loss: 22.8176
+2022-05-31 17:58:12,303 - mmgen - INFO - Saving checkpoint at 2900 iterations
+2022-05-31 17:58:13,059 - mmgen - INFO - Iter [2900/5000]	lr_generators: 2.000e-03 lr_discriminators: 2.000e-03, eta: 0:05:23, time: 0.161, data_time: 0.001, memory: 1347, loss_gan_d_fake: 0.4439, loss_gan_d_real: 0.5591, loss: 25.4995, loss_gan_g: 1.6176, pixel_loss: 23.8818
+2022-05-31 17:58:28,390 - mmgen - INFO - Saving checkpoint at 3000 iterations
+2022-05-31 17:58:29,148 - mmgen - INFO - Sample 200 fake images for evaluation
+2022-05-31 17:58:43,055 - mmgen - INFO - Now best checkpoint is saved as best_fid_iter_3000.pth.
+2022-05-31 17:58:43,055 - mmgen - INFO - Best fid is 162.8736 at iter_3000.
+2022-05-31 17:58:43,065 - mmgen - INFO - Iter(val) [3000]	fid: 162.8736, fid_mean: 64.88426208496094, fid_cov: 97.9894, is: 2.698410749435425, is_std: 0.26915472745895386
+2022-05-31 17:58:58,372 - mmgen - INFO - Saving checkpoint at 3100 iterations
+2022-05-31 17:58:59,110 - mmgen - INFO - Iter [3100/5000]	lr_generators: 2.000e-03 lr_discriminators: 2.000e-03, eta: 0:04:51, time: 0.300, data_time: 0.141, memory: 1347, loss_gan_d_fake: 0.4448, loss_gan_d_real: 0.4977, loss: 24.7876, loss_gan_g: 1.5941, pixel_loss: 23.1935
+2022-05-31 17:59:14,429 - mmgen - INFO - Saving checkpoint at 3200 iterations
+2022-05-31 17:59:15,195 - mmgen - INFO - Iter [3200/5000]	lr_generators: 2.000e-03 lr_discriminators: 2.000e-03, eta: 0:04:36, time: 0.161, data_time: 0.001, memory: 1347, loss_gan_d_fake: 0.5167, loss_gan_d_real: 0.6264, loss: 23.3353, loss_gan_g: 1.4017, pixel_loss: 21.9336
+2022-05-31 17:59:30,517 - mmgen - INFO - Saving checkpoint at 3300 iterations
+2022-05-31 17:59:31,270 - mmgen - INFO - Sample 200 fake images for evaluation
+2022-05-31 17:59:44,492 - mmgen - INFO - Iter(val) [3300]	fid: 181.2628, fid_mean: 72.61605834960938, fid_cov: 108.6467, is: 2.890503406524658, is_std: 0.17584678530693054
+2022-05-31 17:59:59,820 - mmgen - INFO - Saving checkpoint at 3400 iterations
+2022-05-31 18:00:00,554 - mmgen - INFO - Iter [3400/5000]	lr_generators: 2.000e-03 lr_discriminators: 2.000e-03, eta: 0:04:05, time: 0.293, data_time: 0.134, memory: 1347, loss_gan_d_fake: 0.4691, loss_gan_d_real: 0.5608, loss: 24.6337, loss_gan_g: 1.5443, pixel_loss: 23.0894
+2022-05-31 18:00:15,880 - mmgen - INFO - Saving checkpoint at 3500 iterations
+2022-05-31 18:00:16,639 - mmgen - INFO - Iter [3500/5000]	lr_generators: 2.000e-03 lr_discriminators: 2.000e-03, eta: 0:03:50, time: 0.161, data_time: 0.001, memory: 1347, loss_gan_d_fake: 0.4704, loss_gan_d_real: 0.5466, loss: 22.9637, loss_gan_g: 1.5217, pixel_loss: 21.4420
+2022-05-31 18:00:31,970 - mmgen - INFO - Saving checkpoint at 3600 iterations
+2022-05-31 18:00:32,737 - mmgen - INFO - Sample 200 fake images for evaluation
+2022-05-31 18:00:45,951 - mmgen - INFO - Iter(val) [3600]	fid: 178.4003, fid_mean: 72.70670318603516, fid_cov: 105.6936, is: 2.821828842163086, is_std: 0.4403671324253082
+2022-05-31 18:01:01,289 - mmgen - INFO - Saving checkpoint at 3700 iterations
+2022-05-31 18:01:02,041 - mmgen - INFO - Iter [3700/5000]	lr_generators: 2.000e-03 lr_discriminators: 2.000e-03, eta: 0:03:19, time: 0.293, data_time: 0.134, memory: 1347, loss_gan_d_fake: 0.4364, loss_gan_d_real: 0.4954, loss: 23.8948, loss_gan_g: 1.7211, pixel_loss: 22.1738
+2022-05-31 18:01:17,366 - mmgen - INFO - Saving checkpoint at 3800 iterations
+2022-05-31 18:01:18,104 - mmgen - INFO - Iter [3800/5000]	lr_generators: 2.000e-03 lr_discriminators: 2.000e-03, eta: 0:03:04, time: 0.161, data_time: 0.001, memory: 1347, loss_gan_d_fake: 0.4109, loss_gan_d_real: 0.5397, loss: 25.0424, loss_gan_g: 1.6655, pixel_loss: 23.3769
+2022-05-31 18:01:33,424 - mmgen - INFO - Saving checkpoint at 3900 iterations
+2022-05-31 18:01:34,167 - mmgen - INFO - Sample 200 fake images for evaluation
+2022-05-31 18:01:48,065 - mmgen - INFO - Now best checkpoint is saved as best_fid_iter_3900.pth.
+2022-05-31 18:01:48,065 - mmgen - INFO - Best fid is 152.0631 at iter_3900.
+2022-05-31 18:01:48,075 - mmgen - INFO - Iter(val) [3900]	fid: 152.0631, fid_mean: 56.674461364746094, fid_cov: 95.3887, is: 2.7598280906677246, is_std: 0.4072875380516052
+2022-05-31 18:02:03,391 - mmgen - INFO - Saving checkpoint at 4000 iterations
+2022-05-31 18:02:04,134 - mmgen - INFO - Iter [4000/5000]	lr_generators: 2.000e-03 lr_discriminators: 2.000e-03, eta: 0:02:33, time: 0.300, data_time: 0.141, memory: 1347, loss_gan_d_fake: 0.4191, loss_gan_d_real: 0.5239, loss: 23.6383, loss_gan_g: 1.6390, pixel_loss: 21.9993
+2022-05-31 18:02:19,453 - mmgen - INFO - Saving checkpoint at 4100 iterations
+2022-05-31 18:02:20,211 - mmgen - INFO - Iter [4100/5000]	lr_generators: 2.000e-03 lr_discriminators: 2.000e-03, eta: 0:02:18, time: 0.161, data_time: 0.001, memory: 1347, loss_gan_d_fake: 0.4526, loss_gan_d_real: 0.5431, loss: 24.5306, loss_gan_g: 1.6393, pixel_loss: 22.8913
+2022-05-31 18:02:35,577 - mmgen - INFO - Saving checkpoint at 4200 iterations
+2022-05-31 18:02:36,327 - mmgen - INFO - Sample 200 fake images for evaluation
+2022-05-31 18:02:49,336 - mmgen - INFO - Iter(val) [4200]	fid: 188.5079, fid_mean: 77.66718292236328, fid_cov: 110.8408, is: 2.5909016132354736, is_std: 0.3653201758861542
+2022-05-31 18:03:04,695 - mmgen - INFO - Saving checkpoint at 4300 iterations
+2022-05-31 18:03:05,448 - mmgen - INFO - Iter [4300/5000]	lr_generators: 2.000e-03 lr_discriminators: 2.000e-03, eta: 0:01:47, time: 0.291, data_time: 0.132, memory: 1347, loss_gan_d_fake: 0.4782, loss_gan_d_real: 0.5478, loss: 23.6627, loss_gan_g: 1.6036, pixel_loss: 22.0592
+2022-05-31 18:03:20,768 - mmgen - INFO - Saving checkpoint at 4400 iterations
+2022-05-31 18:03:21,510 - mmgen - INFO - Iter [4400/5000]	lr_generators: 2.000e-03 lr_discriminators: 2.000e-03, eta: 0:01:31, time: 0.161, data_time: 0.001, memory: 1347, loss_gan_d_fake: 0.4508, loss_gan_d_real: 0.5197, loss: 23.7120, loss_gan_g: 1.5242, pixel_loss: 22.1879
+2022-05-31 18:03:36,839 - mmgen - INFO - Saving checkpoint at 4500 iterations
+2022-05-31 18:03:37,581 - mmgen - INFO - Sample 200 fake images for evaluation
+2022-05-31 18:03:50,734 - mmgen - INFO - Iter(val) [4500]	fid: 192.7843, fid_mean: 79.75598907470703, fid_cov: 113.0283, is: 2.857150077819824, is_std: 0.3601907193660736
+2022-05-31 18:04:06,071 - mmgen - INFO - Saving checkpoint at 4600 iterations
+2022-05-31 18:04:06,827 - mmgen - INFO - Iter [4600/5000]	lr_generators: 2.000e-03 lr_discriminators: 2.000e-03, eta: 0:01:01, time: 0.292, data_time: 0.133, memory: 1347, loss_gan_d_fake: 0.4429, loss_gan_d_real: 0.5441, loss: 23.0845, loss_gan_g: 1.5162, pixel_loss: 21.5683
+2022-05-31 18:04:22,156 - mmgen - INFO - Saving checkpoint at 4700 iterations
+2022-05-31 18:04:22,906 - mmgen - INFO - Iter [4700/5000]	lr_generators: 2.000e-03 lr_discriminators: 2.000e-03, eta: 0:00:45, time: 0.161, data_time: 0.001, memory: 1347, loss_gan_d_fake: 0.4196, loss_gan_d_real: 0.4799, loss: 23.1313, loss_gan_g: 1.6840, pixel_loss: 21.4474
+2022-05-31 18:04:38,244 - mmgen - INFO - Saving checkpoint at 4800 iterations
+2022-05-31 18:04:38,983 - mmgen - INFO - Sample 200 fake images for evaluation
+2022-05-31 18:04:52,012 - mmgen - INFO - Iter(val) [4800]	fid: 175.6884, fid_mean: 68.707275390625, fid_cov: 106.9811, is: 2.9569404125213623, is_std: 0.34757861495018005
+2022-05-31 18:05:07,344 - mmgen - INFO - Saving checkpoint at 4900 iterations
+2022-05-31 18:05:08,090 - mmgen - INFO - Iter [4900/5000]	lr_generators: 2.000e-03 lr_discriminators: 2.000e-03, eta: 0:00:15, time: 0.291, data_time: 0.132, memory: 1347, loss_gan_d_fake: 0.4321, loss_gan_d_real: 0.5264, loss: 23.9770, loss_gan_g: 1.6542, pixel_loss: 22.3228
+2022-05-31 18:05:23,416 - mmgen - INFO - Saving checkpoint at 5000 iterations
+2022-05-31 18:05:24,167 - mmgen - INFO - Iter [5000/5000]	lr_generators: 2.000e-03 lr_discriminators: 2.000e-03, eta: 0:00:00, time: 0.161, data_time: 0.001, memory: 1347, loss_gan_d_fake: 0.4239, loss_gan_d_real: 0.4977, loss: 24.4287, loss_gan_g: 1.7244, pixel_loss: 22.7043
