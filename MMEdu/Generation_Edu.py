@@ -1,5 +1,3 @@
-from cgi import test
-from re import T
 import mmcv
 import os.path as osp
 from mmcv import Config
@@ -26,6 +24,7 @@ class MMGeneration:
         self.backbonedict = {
             "Pix2Pix": os.path.join(self.file_dirname, 'models', 'Pix2Pix/Pix2Pix.py'),
             "SinGAN": os.path.join(self.file_dirname, 'models', 'SinGAN/SinGAN.py'),
+            "Imporved_DDPM": os.path.join(self.file_dirname, 'models', 'Imporved_DDPM/Imporved_DDPM.py'),
         }
         self.cfg = Config.fromfile(self.backbonedict[self.backbone])
 
@@ -48,8 +47,8 @@ class MMGeneration:
                                 
         # 创建模型
         datasets = [build_dataset(self.cfg.data.train)]
-
-        if self.backbone=='SinGAN':
+        unconditional_models = ['SinGAN', 'Imporved_DDPM']
+        if self.backbone in unconditional_models:
             model = self.__train_single()
         if self.backbone=='Pix2Pix':
             model = self.__train_img2img(
