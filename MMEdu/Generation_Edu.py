@@ -1,5 +1,3 @@
-from cgi import test
-from re import T
 import mmcv
 import os.path as osp
 from mmcv import Config
@@ -26,11 +24,12 @@ class MMGeneration:
         self.backbonedict = {
             "Pix2Pix": os.path.join(self.file_dirname, 'models', 'Pix2Pix/Pix2Pix.py'),
             "SinGAN": os.path.join(self.file_dirname, 'models', 'SinGAN/SinGAN.py'),
+            "Imporved_DDPM": os.path.join(self.file_dirname, 'models', 'Imporved_DDPM/Imporved_DDPM.py'),
         }
         self.cfg = Config.fromfile(self.backbonedict[self.backbone])
 
     def train(self, random_seed=0, save_fold=None, distributed=False, validate=True,
-              epoch=50, lr_generators = 0.002, lr_discriminators=0.002, inverse=False,
+              epochs=50, lr_generators = 0.002, lr_discriminators=0.002, inverse=False,
               checkpoint = None):
 
         # 如果外部不指定save_fold
@@ -48,12 +47,12 @@ class MMGeneration:
                                 
         # 创建模型
         datasets = [build_dataset(self.cfg.data.train)]
-
-        if self.backbone=='SinGAN':
+        unconditional_models = ['SinGAN', 'Imporved_DDPM']
+        if self.backbone in unconditional_models:
             model = self.__train_single()
         if self.backbone=='Pix2Pix':
             model = self.__train_img2img(
-                epoch, lr_generators, lr_discriminators, 
+                epochs, lr_generators, lr_discriminators, 
                 inverse=inverse, checkpoint = checkpoint
             )
 
@@ -77,7 +76,7 @@ class MMGeneration:
         return model
 
 
-    def __train_img2img(self, epoch=50, lr_generators = 0.002, lr_discriminators=0.002, inverse=False,
+    def __train_img2img(self, epochs=50, lr_generators = 0.002, lr_discriminators=0.002, inverse=False,
             checkpoint = None):
         if inverse:
             # 如果训练相反任务模型，需要调换source_domain和target_domain，并修改以下的一系列变量
@@ -100,7 +99,7 @@ class MMGeneration:
             load_checkpoint(model, checkpoint)
 
         # 根据输入参数更新config文件
-        self.cfg.total_iters = epoch * 100
+        self.cfg.total_iters = epochs * 100
         self.cfg.optimizer.generators.lr = lr_generators          # 生成器的学习率
         self.cfg.optimizer.discriminators.lr = lr_discriminators  # 辨别器的学习率
         return model
@@ -111,9 +110,7 @@ class MMGeneration:
                   infer_data = None,
                   save_path = "../results/gen_result.png"):
         if not pretrain_model:
-            pretrain_model = os.path.join(self.cwd, 'checkpoints/gen/ckpt/gen/latest.pth')
-        if not pkl_data:
-            pkl_data = os.path.join(self.cwd, 'checkpoints/gen/pickle/iter_18001.pkl')
+            pretrain_model = os.path.join(self.cwd, 'checkpoints/gen_model/ckpt/gen_model/latest.pth')
             
         print("========= begin inference ==========")
 
@@ -123,6 +120,8 @@ class MMGeneration:
         self.load_dataset(self.dataset_path)
 
         if self.backbone=='SinGAN':
+            if not pkl_data:
+                pkl_data = os.path.join(self.cwd, 'checkpoints/gen/pickle/iter_18001.pkl')
             self.cfg.test_cfg = dict(
                 _delete_ = True,
                 pkl_data = pkl_data
