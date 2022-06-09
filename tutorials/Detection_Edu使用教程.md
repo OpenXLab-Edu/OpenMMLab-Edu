@@ -29,7 +29,7 @@ model.inference(infer_data=img) # 在CPU上进行推理
 
 运行结果如图：
 
-<img src="C:\Users\Jx_G\Desktop\mmedu_base\mmedu_base\tutorials\imgs\image-20220408191108835.png" alt="image-20220408191108835" style="zoom:45%;" />
+<img src="\imgs\image-20220408191108835.png" alt="image-20220408191108835" style="zoom:45%;" />
 
 同时，该图片会保存为`results`文件夹下的`det_result.png`
 

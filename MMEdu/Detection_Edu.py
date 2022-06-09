@@ -8,9 +8,9 @@ from mmdet.apis import inference_detector, init_detector, show_result_pyplot, tr
 from mmdet.models import build_detector
 from mmdet.datasets import build_dataset
 from mmcv.runner import load_checkpoint
-import torch
-
-
+from tqdm import tqdm
+import warnings
+warnings.filterwarnings("ignore")
 
 class MMDetection:
     def __init__(self, 
@@ -36,7 +36,8 @@ class MMDetection:
             elif item[-1] == 'h':
                 self.checkpoint = os.path.join(backbone_path, item)
             else:
-                print("Warning!!! There is an unrecognized file in the backbone folder.")
+                # print("Warning!!! There is an unrecognized file in the backbone folder.")
+                pass
 
         self.cfg = Config.fromfile(self.config)
 
@@ -48,6 +49,7 @@ class MMDetection:
             # 下略
         }
         self.num_classes = num_classes
+        self.chinese_res = None
 
 
     def train(self, random_seed=0, save_fold=None, distributed=False, validate=True,
@@ -116,11 +118,19 @@ class MMDetection:
             meta=dict()
         )
 
-        
+    def print_result(self):
+        print("检测结果如下：")
+        print(self.chinese_res)
+        return self.chinese_res
+
     def inference(self, device='cpu',
                   pretrain_model=None,
                   is_trained=True,
-                  infer_data=None, show=True, rpn_threshold=0.5, rcnn_threshold=0.3,
+                  infer_data=None, 
+                  show=True,  
+                  rpn_threshold=0.5, 
+                  rcnn_threshold=0.3,
+                  save_fold='det_result',
         ):
         if not pretrain_model:
             pretrain_model = os.path.join(self.cwd, 'checkpoints/det_model/plate/latest.pth')
@@ -148,11 +158,40 @@ class MMDetection:
         model.test_cfg.rpn.nms.iou_threshold = 1 - rpn_threshold
         model.test_cfg.rcnn.nms.iou_threshold = 1 - rcnn_threshold
 
-        img_array = mmcv.imread(infer_data)
-        result = inference_detector(model, img_array) # 此处的model和外面的无关,纯局部变量
-        if show == True:
-            show_result_pyplot(model, infer_data, result)
-        return result
+        results = []
+        if(infer_data[-1]!='/'):
+            img_array = mmcv.imread(infer_data)
+            result = inference_detector(model, img_array) # 此处的model和外面的无关,纯局部变量
+            if show == True:
+                show_result_pyplot(model, infer_data, result)
+            chinese_res = []
+            for j in range(result[0].shape[0]):
+                tmp = {}
+                tmp['置信度'] =  result[0][j][4]
+                tmp['坐标'] = {"x":int(result[0][j][0]),"y":int(result[0][j][1]),'w':int(result[0][j][2]),'h':int(result[0][j][3])}
+                # img.append(tmp)
+                chinese_res.append(tmp)
+            # print(chinese_res)
+            self.chinese_res = chinese_res
+            return result
+        else:
+            img_dir = infer_data
+            mmcv.mkdir_or_exist(os.path.abspath(save_fold))
+            chinese_results = []
+            for i,img in enumerate(tqdm(os.listdir(img_dir))):
+                result = inference_detector(model,img_dir+ img) # 此处的model和外面的无关,纯局部变量
+                model.show_result(img_dir+img,result, out_file=os.path.join(save_fold,img))
+                chinese_res = []
+                for j in range(result[0].shape[0]):
+                    tmp = {}
+                    tmp['置信度'] =  result[0][j][4]
+                    tmp['坐标'] = {"x":int(result[0][j][0]),"y":int(result[0][j][1]),'w':int(result[0][j][2]),'h':int(result[0][j][3])}
+                    # img.append(tmp)
+                    chinese_res.append(tmp)
+                chinese_results.append(chinese_res)
+                results.append(result)
+            self.chinese_res = chinese_results
+        return results
 
 
     def load_dataset(self, path):
