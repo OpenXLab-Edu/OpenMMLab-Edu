@@ -1,6 +1,7 @@
 import os
 import mmcv
 import time
+import torch
 from mmcv import Config
 from mmcls.apis import inference_model, init_model, show_result_pyplot, train_model
 from mmcls.models import build_classifier
@@ -80,7 +81,7 @@ class MMClassification:
         if not checkpoint:
             model.init_weights()
         else:
-            load_checkpoint(model, checkpoint)
+            load_checkpoint(model, checkpoint, map_location=torch.device('cpu'))
             # model = init_model(self.cfg, checkpoint)
 
         datasets = [build_dataset(self.cfg.data.train)]
