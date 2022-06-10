@@ -1,5 +1,5 @@
 # 使用说明
 
-学习与使用时，需要讲使用demo移动到demo文件夹外，如使用cls_demo时，需要移动至OpenMMLab-Edu文件夹下。
+学习与使用时，可以在任意python运行环境中，安装好MMEdu，然后打开运行demo的py文件，可以使用jupyter打开ipynb文件。
 
-（mmbase不需要移动，可直接运行）
+更详细的说明可以参见使用教程。
