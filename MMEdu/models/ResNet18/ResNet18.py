@@ -61,7 +61,7 @@ data = dict(
         data_prefix='data/imagenet/val',
         ann_file='data/imagenet/meta/val.txt',
         pipeline=test_pipeline))
-evaluation = dict(interval=1, metric='accuracy')
+evaluation = dict(interval=5, metric='accuracy')
 
 # checkpoint saving
 checkpoint_config = dict(interval=1)
