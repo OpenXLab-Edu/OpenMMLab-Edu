@@ -47,7 +47,12 @@ class MMClassification:
             "MobileNet": os.path.join(self.file_dirname, 'models', 'MobileNet/MobileNet.py'),
             "ResNet50": os.path.join(self.file_dirname, 'models', 'ResNet50/ResNet50.py'),
             "ResNet18": os.path.join(self.file_dirname, 'models', 'ResNet18/ResNet18.py'),
-            'LeNet': os.path.join(self.file_dirname, 'models', 'LeNet/LeNet.py'),
+            "LeNet": os.path.join(self.file_dirname, 'models', 'LeNet/LeNet.py'),
+            "RepVGG": os.path.join(self.file_dirname, 'models', 'RepVGG/RepVGG.py'),
+            "RegNet": os.path.join(self.file_dirname, 'models', 'RegNet/RegNet.py'),
+            "ResNeXt": os.path.join(self.file_dirname, 'models', 'ResNeXt/ResNeXt.py'),
+            "VGG": os.path.join(self.file_dirname, 'models', 'VGG/VGG.py'),
+            "ShuflleNet_v2": os.path.join(self.file_dirname, 'models', 'ShuflleNet_v2/ShuflleNet_v2.py'),
             # 下略
         }
 
@@ -203,7 +208,7 @@ class MMClassification:
             to_rgb=True
         )
 
-        self.cfg.data.train.data_prefix = os.path.join(self.dataset_path, 'val_set')
+        self.cfg.data.train.data_prefix = os.path.join(self.dataset_path, 'training_set')
         self.cfg.data.train.classes = os.path.join(self.dataset_path, 'classes.txt')
 
         self.cfg.data.val.data_prefix = os.path.join(self.dataset_path, 'val_set')

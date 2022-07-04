@@ -39,7 +39,7 @@ class MMSegmentation:
         self.dataset_path = dataset_path
         self.lr = None
         self.backbonedict = {
-            "UNet": '../MMEdu/models/UNet/UNet.py'
+            "UNet": os.path.join(self.file_dirname, 'models', 'UNet/UNet.py'),
             # 下略
         }
         self.num_classes = num_classes
