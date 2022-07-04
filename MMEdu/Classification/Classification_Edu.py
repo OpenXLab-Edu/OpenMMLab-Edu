@@ -225,3 +225,4 @@ class MMClassification:
             for name in f:
                 classes.append(name.strip('\n'))
         return classes
+
