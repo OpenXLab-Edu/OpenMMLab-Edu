@@ -1,29 +1,35 @@
 from base import *
-from MMEdu import MMClassification
-
+from MMEdu import MMClassification as cls
 
 def only_infer_demo():
 	img = 'dog.jpg'
-	model = MMClassification(backbone='MobileNet')
-	model.checkpoint = '../checkpoints/cls_model/cats_dogs/latest.pth'
-	result = model.inference(image=img, show=True)
+	model = cls(backbone='ShuffleNet_v2')
+	model.num_classes = 2
+	model.checkpoint = '../MMEdu/Classification/models/ShuffleNet_v2/ShuffleNet_v2.pth'
+	# model.checkpoint = '../checkpoints/cls_model/cats_dogs/latest.pth'
+	result = model.inference(image=img, show=True, class_path='../dataset/cls/cats_dogs/classes.txt', checkpoint=model.checkpoint)
 	print(result)
 
 
 def continue_train_demo():
-	model = MMClassification(backbone='MobileNet')
+	model = cls(backbone='ResNet18')
 	model.num_classes = 2
 	model.save_fold = '../checkpoints/cls_model/cats_dogs'
-	model.load_dataset(path='../dataset/cls/cats_dogs_dataset')
-	model.train(epochs=1, validate=True, checkpoint='../checkpoints/cls_model/cats_dogs/latest.pth')
+	model.checkpoint = '../checkpoints/cls_model/cats_dogs/latest.pth'
+	model.load_dataset(path='../dataset/cls/cats_dogs')
+	model.train(epochs=1, validate=True, checkpoint=model.checkpoint)
+	result = model.inference(image='dog.jpg', class_path='../dataset/cls/cats_dogs/classes.txt', checkpoint=model.checkpoint)
+	print(result)
 
 
 def normal_train_demo():
-	model = MMClassification(backbone='MobileNet')
+	model = cls(backbone='ResNet18')
 	model.num_classes = 2
 	model.save_fold = '../checkpoints/cls_model/cats_dogs'
-	model.load_dataset(path='../dataset/cls/cats_dogs_dataset')
-	model.train(epochs=100, validate=True)
+	model.load_dataset(path='../dataset/cls/cats_dogs')
+	model.train(epochs=250, validate=True)
+	result = model.inference(image='dogs.jpg')
+	print(result)
 
 
 if __name__ == "__main__":
