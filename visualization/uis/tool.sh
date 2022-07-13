@@ -1,0 +1,1 @@
+@pyuic5 control.ui -o control.py
