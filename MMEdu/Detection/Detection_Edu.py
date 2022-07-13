@@ -120,79 +120,84 @@ class MMDetection:
             meta=dict()
         )
 
-    def print_result(self):
+    def print_result(self, res=None):
         print("检测结果如下：")
         print(self.chinese_res)
         return self.chinese_res
 
     def inference(self, device='cpu',
-                  pretrain_model=None,
-                  is_trained=True,
-                  infer_data=None, 
-                  show=True,  
-                  rpn_threshold=0.5, 
-                  rcnn_threshold=0.3,
+                  checkpoint=None,
+                  image=None,
+                  show=True,
+                  rpn_threshold=0.7,
+                  rcnn_threshold=0.7,
+                  class_path="../dataset/det/coco/classes.txt",
                   save_fold='det_result',
-        ):
-        if not pretrain_model:
-            pretrain_model = os.path.join(self.cwd, 'checkpoints/det_model/plate/latest.pth')
+                  ):
 
         print("========= begin inference ==========")
 
         if self.num_classes != -1:
             self.cfg.model.roi_head.bbox_head.num_classes = self.num_classes
 
-        checkpoint = self.checkpoint
-        if is_trained:
+        if checkpoint:
             # 加载数据集及配置文件的路径
-            checkpoint = pretrain_model
-            self.load_dataset(self.dataset_path)
+            # self.load_dataset(self.dataset_path)
             # 修正检测的目标
-            self.cfg.classes = self.get_classes(self.cfg.data.train.ann_file)
+            self.cfg.classes = self.get_class(class_path)
             self.cfg.data.train.classes = self.cfg.classes
             self.cfg.data.test.classes = self.cfg.classes
             self.cfg.data.val.classes = self.cfg.classes
-            self.cfg.model.roi_head.bbox_head.num_classes = len(self.cfg.classes)
+            self.cfg.model.roi_head.bbox_head.num_classes = len(
+                self.cfg.classes)
             model = init_detector(self.cfg, checkpoint, device=device)
             model.CLASSES = self.cfg.classes
         else:
-            model = init_detector(self.cfg, checkpoint, device=device)
+            model = init_detector(self.cfg, self.checkpoint, device=device)
         model.test_cfg.rpn.nms.iou_threshold = 1 - rpn_threshold
         model.test_cfg.rcnn.nms.iou_threshold = 1 - rcnn_threshold
 
         results = []
-        if(infer_data[-1]!='/'):
-            img_array = mmcv.imread(infer_data)
-            result = inference_detector(model, img_array) # 此处的model和外面的无关,纯局部变量
+        if (image[-1] != '/'):
+            img_array = mmcv.imread(image)
+            result = inference_detector(
+                model, img_array)  # 此处的model和外面的无关,纯局部变量
             if show == True:
-                show_result_pyplot(model, infer_data, result)
+                show_result_pyplot(model, image, result)
+            model.show_result(image, result, show=show, out_file=os.path.join(save_fold, image))
             chinese_res = []
             for j in range(result[0].shape[0]):
                 tmp = {}
-                tmp['置信度'] =  result[0][j][4]
-                tmp['坐标'] = {"x":int(result[0][j][0]),"y":int(result[0][j][1]),'w':int(result[0][j][2]),'h':int(result[0][j][3])}
+                tmp['置信度'] = result[0][j][4]
+                tmp['坐标'] = {"x": int(result[0][j][0]), "y": int(
+                    result[0][j][1]), 'w': int(result[0][j][2]), 'h': int(result[0][j][3])}
                 # img.append(tmp)
                 chinese_res.append(tmp)
             # print(chinese_res)
             self.chinese_res = chinese_res
+            print("========= finish inference ==========")
             return result
         else:
-            img_dir = infer_data
+            img_dir = image
             mmcv.mkdir_or_exist(os.path.abspath(save_fold))
             chinese_results = []
-            for i,img in enumerate(tqdm(os.listdir(img_dir))):
-                result = inference_detector(model,img_dir+ img) # 此处的model和外面的无关,纯局部变量
-                model.show_result(img_dir+img,result, out_file=os.path.join(save_fold,img))
+            for i, img in enumerate(tqdm(os.listdir(img_dir))):
+                result = inference_detector(
+                    model, img_dir + img)  # 此处的model和外面的无关,纯局部变量
+                model.show_result(img_dir + img, result,
+                                  out_file=os.path.join(save_fold, img))
                 chinese_res = []
                 for j in range(result[0].shape[0]):
                     tmp = {}
-                    tmp['置信度'] =  result[0][j][4]
-                    tmp['坐标'] = {"x":int(result[0][j][0]),"y":int(result[0][j][1]),'w':int(result[0][j][2]),'h':int(result[0][j][3])}
+                    tmp['置信度'] = result[0][j][4]
+                    tmp['坐标'] = {"x": int(result[0][j][0]), "y": int(
+                        result[0][j][1]), 'w': int(result[0][j][2]), 'h': int(result[0][j][3])}
                     # img.append(tmp)
                     chinese_res.append(tmp)
                 chinese_results.append(chinese_res)
                 results.append(result)
             self.chinese_res = chinese_results
+        print("========= finish inference ==========")
         return results
 
 
@@ -210,6 +215,13 @@ class MMDetection:
         self.cfg.data.test.ann_file = os.path.join(self.dataset_path, 'annotations/valid.json')
 
 
+    def get_class(self, class_path):
+        classes = []
+        with open(class_path, 'r') as f:
+            for name in f:
+                classes.append(name.strip('\n'))
+        return classes
+
     def get_classes(self, annotation_file):
         classes = ()
         with open(annotation_file, 'r') as f:
@@ -219,6 +231,4 @@ class MMDetection:
                 for cat in dataset['categories']:
                     classes = classes + (cat['name'],)
         return classes
-
-        
        

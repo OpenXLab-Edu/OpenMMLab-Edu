@@ -131,7 +131,7 @@ class MMClassification:
             meta=dict()
         )
 
-    def print_result(self):
+    def print_result(self, res=None):
         print("检测结果如下：")
         print(self.chinese_res)
         return self.chinese_res
