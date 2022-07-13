@@ -48,6 +48,12 @@ class MMClassification:
             'ResNet18': os.path.join(self.file_dirname, 'models', 'ResNet18/ResNet18.py'),
             'ResNet50': os.path.join(self.file_dirname, 'models', 'ResNet50/ResNet50.py'),
             'LeNet': os.path.join(self.file_dirname, 'models', 'LeNet/LeNet.py'),
+            "RepVGG": os.path.join(self.file_dirname, 'models', 'RepVGG/RepVGG.py'),
+            "RegNet": os.path.join(self.file_dirname, 'models', 'RegNet/RegNet.py'),
+            "ResNeXt": os.path.join(self.file_dirname, 'models', 'ResNeXt/ResNeXt.py'),
+            "VGG": os.path.join(self.file_dirname, 'models', 'VGG/VGG.py'),
+            "ShuflleNet_v2": os.path.join(self.file_dirname, 'models', 'ShuflleNet_v2/ShuflleNet_v2.py'),
+            
             # 下略
         }
 
@@ -56,7 +62,7 @@ class MMClassification:
 
     def train(self, random_seed=0, save_fold=None, distributed=False, validate=True, device="cpu",
               metric='accuracy', save_best='auto', optimizer="SGD", epochs=100, lr=0.01, weight_decay=0.001,
-              checkpoint=None):
+              checkpoint=None, evaluation_interval = 5):
         set_random_seed(seed=random_seed)
         # 获取config信息
         self.cfg = Config.fromfile(self.backbonedict[self.backbone])
@@ -105,6 +111,7 @@ class MMClassification:
         self.cfg.optimizer.type = optimizer  # 优化器
         self.cfg.optimizer.weight_decay = weight_decay  # 优化器的衰减权重
         self.cfg.evaluation.metric = metric  # 验证指标
+        self.cfg.evaluation.interval = evaluation_interval # 验证间隔
         self.cfg.evaluation.save_best = save_best  #
         self.cfg.runner.max_epochs = epochs  # 最大的训练轮次
 

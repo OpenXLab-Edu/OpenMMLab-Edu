@@ -52,6 +52,8 @@ class MMDetection:
         self.backbonedict = {
             "FasterRCNN": os.path.join(self.file_dirname, 'models', 'FasterRCNN/FasterRCNN.py'),
             "Yolov3": os.path.join(self.file_dirname, 'models', 'Yolov3/Yolov3.py'),
+            "Mask_RCNN": os.path.join(self.file_dirname, 'models', 'Mask_RCNN/Mask_RCNN.py'),
+            "SSD_Lite": os.path.join(self.file_dirname, 'models', 'SSD_Lite/SSD_Lite.py'),
             # 下略
         }
         self.num_classes = num_classes
