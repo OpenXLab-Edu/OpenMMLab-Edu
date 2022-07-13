@@ -44,24 +44,19 @@ class MMClassification:
         self.dataset_path = dataset_path
         self.lr = None
         self.backbonedict = {
-            "MobileNet": os.path.join(self.file_dirname, 'models', 'MobileNet/MobileNet.py'),
-            "ResNet50": os.path.join(self.file_dirname, 'models', 'ResNet50/ResNet50.py'),
-            "ResNet18": os.path.join(self.file_dirname, 'models', 'ResNet18/ResNet18.py'),
-            "LeNet": os.path.join(self.file_dirname, 'models', 'LeNet/LeNet.py'),
-            "RepVGG": os.path.join(self.file_dirname, 'models', 'RepVGG/RepVGG.py'),
-            "RegNet": os.path.join(self.file_dirname, 'models', 'RegNet/RegNet.py'),
-            "ResNeXt": os.path.join(self.file_dirname, 'models', 'ResNeXt/ResNeXt.py'),
-            "VGG": os.path.join(self.file_dirname, 'models', 'VGG/VGG.py'),
-            "ShuflleNet_v2": os.path.join(self.file_dirname, 'models', 'ShuflleNet_v2/ShuflleNet_v2.py'),
+            'MobileNet': os.path.join(self.file_dirname, 'models', 'MobileNet/MobileNet.py'),
+            'ResNet18': os.path.join(self.file_dirname, 'models', 'ResNet18/ResNet18.py'),
+            'ResNet50': os.path.join(self.file_dirname, 'models', 'ResNet50/ResNet50.py'),
+            'LeNet': os.path.join(self.file_dirname, 'models', 'LeNet/LeNet.py'),
             # 下略
         }
 
         self.num_classes = num_classes
         self.chinese_res = None
 
-    def train(self, random_seed=0, save_fold=None, distributed=False, validate=True, device="cuda",
+    def train(self, random_seed=0, save_fold=None, distributed=False, validate=True, device="cpu",
               metric='accuracy', save_best='auto', optimizer="SGD", epochs=100, lr=0.01, weight_decay=0.001,
-              checkpoint=None, evaluation_interval = 5):
+              checkpoint=None):
         set_random_seed(seed=random_seed)
         # 获取config信息
         self.cfg = Config.fromfile(self.backbonedict[self.backbone])
@@ -110,7 +105,6 @@ class MMClassification:
         self.cfg.optimizer.type = optimizer  # 优化器
         self.cfg.optimizer.weight_decay = weight_decay  # 优化器的衰减权重
         self.cfg.evaluation.metric = metric  # 验证指标
-        self.cfg.evaluation.interval = evaluation_interval # 验证间隔
         self.cfg.evaluation.save_best = save_best  #
         self.cfg.runner.max_epochs = epochs  # 最大的训练轮次
 
@@ -131,7 +125,7 @@ class MMClassification:
             meta=dict()
         )
 
-    def print_result(self):
+    def print_result(self, res=None):
         print("检测结果如下：")
         print(self.chinese_res)
         return self.chinese_res
@@ -162,8 +156,6 @@ class MMClassification:
         if (image[-1] != '/'):
             img_array = mmcv.imread(image, flag='grayscale' if self.backbone == "LeNet" else 'color')
             result = inference_model(model, img_array)  # 此处的model和外面的无关,纯局部变量
-            if show == True:
-                show_result_pyplot(model, image, result)
             model.show_result(image, result, show=show, out_file=os.path.join(save_fold, image))
             chinese_res = []
             tmp = {}
