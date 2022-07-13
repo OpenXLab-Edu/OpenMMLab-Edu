@@ -1,5 +1,6 @@
 from base import *
-from MMEdu.MMBase import *
+from BaseEdu import *
+import numpy as np
 
 def cal_accuracy(y, pred_y):
     res = pred_y.argmax(dim=1)
@@ -16,7 +17,7 @@ test_path = '../dataset/iris/iris_test.csv'
 test_x = np.loadtxt(test_path, dtype=float, delimiter=',',skiprows=1,usecols=range(0,4))
 test_y = np.loadtxt(test_path, dtype=int, delimiter=',',skiprows=1,usecols=4)
 # 声明模型
-model = MMBase()
+model = BaseNet()
 model.add(layer='Linear',size=(4, 10),activation='ReLU') # [120, 10]
 model.add(layer='Linear',size=(10, 5), activation='ReLU') # [120, 5]
 model.add(layer='Linear', size=(5, 3), activation='Softmax') # [120, 3]

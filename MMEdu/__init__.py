@@ -1,11 +1,13 @@
-from .Classification_Edu import MMClassification
-from .Detection_Edu import MMDetection
-from .Generation_Edu import MMGeneration
-from .Pose_Edu import MMPose
+from .Classification import MMClassification
+from .Detection import MMDetection
+from .Segmentation import MMSegmentation
+from .Generation import MMGeneration
+from .Pose import MMPose
 
 __all__ = [
     'MMClassification',
     'MMDetection',
+    'MMSegmentation'
     'MMGeneration',
     'MMPose'
 ]
