@@ -56,7 +56,7 @@ class MMDetection:
 
     def train(self, random_seed=0, save_fold=None, distributed=False, validate=True,
               metric='bbox', optimizer="SGD", epochs=100, lr=0.001, weight_decay=0.001, Frozen_stages=1,
-              checkpoint = None):
+              checkpoint = None, encoding = 'utf-8'):
         
         # 加载网络模型的配置文件
         self.cfg = Config.fromfile(self.backbonedict[self.backbone])
@@ -78,7 +78,7 @@ class MMDetection:
 
         self.load_dataset(self.dataset_path)
         # 添加需要进行检测的类名
-        self.cfg.classes = self.get_classes(self.cfg.data.train.ann_file)
+        self.cfg.classes = self.get_classes(self.cfg.data.train.ann_file, encoding)
         # 分别为训练、测试、验证添加类名
         self.cfg.data.train.classes = self.cfg.classes
         self.cfg.data.test.classes = self.cfg.classes
@@ -133,6 +133,7 @@ class MMDetection:
                   rpn_threshold=0.5, 
                   rcnn_threshold=0.3,
                   save_fold='det_result',
+                  encoding='utf-8'
         ):
         if not pretrain_model:
             pretrain_model = os.path.join(self.cwd, 'checkpoints/det_model/plate/latest.pth')
@@ -148,7 +149,7 @@ class MMDetection:
             checkpoint = pretrain_model
             self.load_dataset(self.dataset_path)
             # 修正检测的目标
-            self.cfg.classes = self.get_classes(self.cfg.data.train.ann_file)
+            self.cfg.classes = self.get_classes(self.cfg.data.train.ann_file, encoding)
             self.cfg.data.train.classes = self.cfg.classes
             self.cfg.data.test.classes = self.cfg.classes
             self.cfg.data.val.classes = self.cfg.classes
@@ -210,9 +211,9 @@ class MMDetection:
         self.cfg.data.test.ann_file = os.path.join(self.dataset_path, 'annotations/valid.json')
 
 
-    def get_classes(self, annotation_file):
+    def get_classes(self, annotation_file, encoding = 'utf-8'):
         classes = ()
-        with open(annotation_file, 'r') as f:
+        with open(annotation_file, 'r', encoding = encoding) as f:
             dataset = json.load(f)
             # categories = dataset["categories"]
             if 'categories' in dataset:
