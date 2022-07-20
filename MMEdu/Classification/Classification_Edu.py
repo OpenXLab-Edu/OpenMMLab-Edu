@@ -141,14 +141,15 @@ class MMClassification:
                   image=None,
                   show=True,
                   class_path="../dataset/classes/cls_classes.txt",
-                  save_fold='cls_result'
+                  save_fold='cls_result',
+                  encoding='utf-8'
                   ):
 
         if not checkpoint:
             checkpoint = os.path.join(self.cwd, 'checkpoints/cls_model/hand_gray/latest.pth')
 
         print("========= begin inference ==========")
-        classed_name = self.get_class(class_path)
+        classed_name = self.get_class(class_path, encoding)
         self.num_classes = len(classed_name)
 
         if self.num_classes != -1:
@@ -219,9 +220,9 @@ class MMClassification:
         self.cfg.data.test.ann_file = os.path.join(self.dataset_path, 'test.txt')
         self.cfg.data.test.classes = os.path.join(self.dataset_path, 'classes.txt')
 
-    def get_class(self, class_path):
+    def get_class(self, class_path, encoding = 'utf-8'):
         classes = []
-        with open(class_path, 'r') as f:
+        with open(class_path, 'r', encoding = encoding) as f:
             for name in f:
                 classes.append(name.strip('\n'))
         return classes
