@@ -1,5 +1,5 @@
 from .Classification import MMClassification
-from .Detection import MMDetection
+from .Detection import MMDetectio
 # from Segmentation.Segmentation_Edu import MMSegmentation
 # from .Generation_Edu import MMGeneration
 # from .Pose_Edu import MMPose

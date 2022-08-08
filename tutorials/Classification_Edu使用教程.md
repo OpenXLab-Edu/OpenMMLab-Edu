@@ -23,7 +23,7 @@ from MMEdu import MMClassification  # 导入mmcls模块
 img='cat.jpg' # 指定进行推理的图片路径，我们使用demo文件夹中提供的图片
 model=MMClassification(backbone='MobileNet') # 实例化mmcls模型
 model.checkpoint='../checkpoints/cls_model/cats_dogs/latest.pth' # 指定使用的模型权重文件
-model.inference(img=img, device='cpu', show=True) # 在CPU上进行推理
+model.inference(img=img, device='cpu', show=True) # 在CPU上进行推理，文本数据文件默认编码为 UTF-8
 # 同时您可以修改show的值来决定是否需要显示结果图片，此处默认显式结果图片
 ~~~
 
@@ -56,7 +56,7 @@ model = MMClassification(backbone='MobileNet') # 实例化mmcls模型
 - **模型推理**：
 
 ~~~python
-model.inference(img=img,device='cpu') # 在cpu上进行推理
+model.inference(img=img,device='cpu') # 在cpu上进行推理，默认数据文件编码为 UTF-8
 ~~~
 
 将所需要推理图片的路径传入`inference`函数中即可进行推理，我们这里传入了两个参数，`img`代表的就是推理图片的路径，`device`是推理所用的设备，默认是参数是`'cuda:0'`，使用GPU，我们这里将其赋值为`'cpu'`，给设备不支持GPU的同学做一个参考。
@@ -71,6 +71,8 @@ model.inference(img=img,device='cpu') # 在cpu上进行推理
 
 `name`：保存的图片名，数据结构为字符串，默认参数为`'cls_result'`，用户也可以定义为自己想要的名字。
 
+`encoding`：文本数据文件的编码，默认参数为 `'utf-8'`，用户也可以根据实际的数据文件编码进行修改。
+
 #### 2.训练模型
 
 使用下面的代码即可简单体验Classification_Edu的训练过程，我们会为您进行详细的介绍。
@@ -82,6 +84,8 @@ model.inference(img=img,device='cpu') # 在cpu上进行推理
 ![image-20220408163050392](imgs\image-20220408163050392.png)
 
 **cats_dogs_dataset**文件夹中包含三个图片文件夹，`test_set`,`training_set`,`val_set`分别存储测试集，训练集和验证集的图片；以及三个`txt`文件，`classes.txt`记录该数据集的类别，`test.txt`和`val.txt`分别记录测试集和验证集的图片名。
+
+**请注意：若文本数据文件包含中文，请使用 UTF-8 编码。**
 
 - 代码展示
 
@@ -136,7 +140,7 @@ model.train(epochs=5, validate=True) # 设定训练的epoch次数以及是否进
 
 `random_seed`：随机种子策略，默认为`0`即不使用，使用随机种子策略会减小模型算法结果的随机性。
 
-
+`encoding`：文本数据文件的编码，默认参数为 `'utf-8'`，用户也可以根据实际的数据文件编码进行修改。
 
 执行上述代码之后的运行结果如下图
 
