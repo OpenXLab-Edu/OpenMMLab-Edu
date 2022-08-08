@@ -73,8 +73,13 @@ class MMDetection:
 
         self.cfg.model.backbone.frozen_stages = Frozen_stages
 
+        # for two-stage
         if self.num_classes != -1:
             self.cfg.model.roi_head.bbox_head.num_classes = self.num_classes
+
+        # for one-stage
+        # if self.num_classes != -1:
+        #     self.cfg.model.bbox_head.num_classes = self.num_classes
 
         self.load_dataset(self.dataset_path)
         # 添加需要进行检测的类名
@@ -197,10 +202,11 @@ class MMDetection:
         return results
 
 
-    def load_dataset(self, path):
+    def load_dataset(self, path, dataset_type='coco'):
         self.dataset_path = path
-
+        self.
         #数据集修正为coco格式
+        if 
         self.cfg.data.train.img_prefix = os.path.join(self.dataset_path, 'images/train/')
         self.cfg.data.train.ann_file = os.path.join(self.dataset_path, 'annotations/train.json')
 
