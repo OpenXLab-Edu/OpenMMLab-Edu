@@ -60,7 +60,7 @@ class MMDetection:
         
         # 加载网络模型的配置文件
         self.cfg = Config.fromfile(self.backbonedict[self.backbone])
-        print("进行了cfg的切换")
+        #print("进行了cfg的切换")
 
         # 如果外部不指定save_fold
         if not self.save_fold:
@@ -105,6 +105,10 @@ class MMDetection:
         # 根据输入参数更新config文件
         self.cfg.optimizer.lr = lr  # 学习率
         self.cfg.optimizer.type = optimizer  # 优化器
+        if optimizer == 'Adam':
+            self.cfg.optimizer = dict(type='Adam', lr=lr,betas=(0.9, 0.999),eps=1e-8, weight_decay=0.0001)
+        elif optimizer == 'Adagrad':
+            self.cfg.optimizer = dict(type='Adagrad',lr=lr, lr_decay=0)
         self.cfg.optimizer.weight_decay = weight_decay  # 优化器的衰减权重
         self.cfg.evaluation.metric = metric  # 验证指标
         self.cfg.runner.max_epochs = epochs  # 最大的训练轮次
@@ -125,7 +129,7 @@ class MMDetection:
             meta=dict()
         )
 
-    def print_result(self):
+    def print_result(self, res=None):
         print("检测结果如下：")
         print(self.chinese_res)
         return self.chinese_res
@@ -204,9 +208,9 @@ class MMDetection:
 
     def load_dataset(self, path, dataset_type='coco'):
         self.dataset_path = path
-        self.
+        #self.
         #数据集修正为coco格式
-        if 
+        #if 
         self.cfg.data.train.img_prefix = os.path.join(self.dataset_path, 'images/train/')
         self.cfg.data.train.ann_file = os.path.join(self.dataset_path, 'annotations/train.json')
 
