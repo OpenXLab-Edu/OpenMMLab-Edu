@@ -1,0 +1,21 @@
+本地仅提供了较小的数据集，而由于猫狗数据集等数据集较大，您可以在我们提供的链接下载。
+下载链接1：https://p6bm2if73b.feishu.cn/drive/folder/fldcnO1qXPf9In1Jy669Dar9Heg
+下载链接2：https://pan.baidu.com/s/1jBMoDZWnya-wzKo0jvG2Fg?pwd=2022
+
+下面以猫狗数据集为例，介绍如何添加数据集。
+步骤一：
+       下载链接中的文件“cats_dogs_dataset.zip”。
+       注：如果想节省时间，简单体验，可以下载“cats_dogs_dataset（精简版）.zip”
+步骤二：
+       返回上一级目录，删除cats_dogs_dataset文件夹。
+       将压缩包解压到当前文件夹（提取到当前位置），即“Project\dataset\cls”。
+       Tips：如果您是先解压到其他路径，再移动到这个路径，文件移动速度会大大降低。
+步骤三：
+       检查数据集路径。
+       1）现在，“Project\dataset\cls”路径下多了一个名为“cats_dogs_dataset”的文件夹。
+       2）进入该文件夹，如果里面还是一个名为“cats_dogs_dataset”的文件夹，那么您在代码中也需要写两次文件夹名，如：
+               model.load_dataset(path='../dataset/cls/cats_dogs_dataset/cats_dogs_dataset')
+            如果您看到的直接是三个文件夹和三个文本文件，那么您可以这么写（少一层路径）：
+               model.load_dataset(path='../dataset/cls/cats_dogs_dataset')
+
+至此，您已经完成了添加分类数据集的学习。
