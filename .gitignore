@@ -1,2 +1,10 @@
+# py_cache
 .DS_store
-.vscode/
+.vscode
+.idea
+*/__pycache__
+
+# Pytorch
+*.pth
+*.py~
+*.sh~
