@@ -1,1 +1,10 @@
-.DS_store
+# cache
+.DS_Store
+*/.DS_Store
+.vscode/
+*/__pycache__
+
+# Pytorch
+*.pth
+*.py~
+*.sh~
