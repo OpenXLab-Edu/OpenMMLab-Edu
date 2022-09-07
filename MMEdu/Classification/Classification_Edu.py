@@ -3,14 +3,25 @@ import mmcv
 import time
 import torch
 from mmcv import Config
-from mmcls.apis import inference_model, init_model, show_result_pyplot, train_model, set_random_seed
+from mmcls.apis import inference_model, init_model, show_result_pyplot, train_model, set_random_seed, single_gpu_test
 from mmcls.models import build_classifier
-from mmcls.datasets import build_dataset
+from mmcls.datasets import  build_dataloader,build_dataset
 from mmcv.runner import load_checkpoint
 from tqdm import tqdm
+import numpy as np
 
 
 class MMClassification:
+    def sota():
+        pypath = os.path.abspath(__file__)
+        father = os.path.dirname(pypath)
+        models = os.path.join(father, 'models')
+        sota_model = []
+        for i in os.listdir(models):
+            if i[0] != '_':
+                sota_model.append(i)
+        return sota_model
+
     def __init__(
             self,
             backbone='LeNet',
@@ -32,7 +43,7 @@ class MMClassification:
         backbone_path = os.path.join(self.file_dirname, 'models', self.backbone)
         ckpt_cfg_list = list(os.listdir(backbone_path))
         for item in ckpt_cfg_list:
-            if item[-1] == 'y':
+            if item[-1] == 'y' and item[0] != '_':  #pip修改1
                 self.config = os.path.join(backbone_path, item)
             elif item[-1] == 'h':
                 self.checkpoint = os.path.join(backbone_path, item)
@@ -44,24 +55,19 @@ class MMClassification:
         self.dataset_path = dataset_path
         self.lr = None
         self.backbonedict = {
-            "MobileNet": os.path.join(self.file_dirname, 'models', 'MobileNet/MobileNet.py'),
-            "ResNet50": os.path.join(self.file_dirname, 'models', 'ResNet50/ResNet50.py'),
-            "ResNet18": os.path.join(self.file_dirname, 'models', 'ResNet18/ResNet18.py'),
-            "LeNet": os.path.join(self.file_dirname, 'models', 'LeNet/LeNet.py'),
-            "RepVGG": os.path.join(self.file_dirname, 'models', 'RepVGG/RepVGG.py'),
-            "RegNet": os.path.join(self.file_dirname, 'models', 'RegNet/RegNet.py'),
-            "ResNeXt": os.path.join(self.file_dirname, 'models', 'ResNeXt/ResNeXt.py'),
-            "VGG": os.path.join(self.file_dirname, 'models', 'VGG/VGG.py'),
-            "ShuflleNet_v2": os.path.join(self.file_dirname, 'models', 'ShuflleNet_v2/ShuflleNet_v2.py'),
+            'MobileNet': os.path.join(self.file_dirname, 'models', 'MobileNet/MobileNet.py'),
+            'ResNet18': os.path.join(self.file_dirname, 'models', 'ResNet18/ResNet18.py'),
+            'ResNet50': os.path.join(self.file_dirname, 'models', 'ResNet50/ResNet50.py'),
+            'LeNet': os.path.join(self.file_dirname, 'models', 'LeNet/LeNet.py'),
             # 下略
         }
 
         self.num_classes = num_classes
         self.chinese_res = None
 
-    def train(self, random_seed=0, save_fold=None, distributed=False, validate=True, device="cuda",
+    def train(self, random_seed=0, save_fold=None, distributed=False, validate=True, device="cpu",
               metric='accuracy', save_best='auto', optimizer="SGD", epochs=100, lr=0.01, weight_decay=0.001,
-              checkpoint=None, evaluation_interval = 5):
+              checkpoint=None):
         set_random_seed(seed=random_seed)
         # 获取config信息
         self.cfg = Config.fromfile(self.backbonedict[self.backbone])
@@ -104,21 +110,19 @@ class MMClassification:
             self.cfg.evaluation.metric_options = {'topk': (1,)}
         else:
             self.cfg.evaluation.metric_options = {'topk': (5,)}
-
-        # 根据输入参数更新config文件
-        self.cfg.optimizer.lr = lr  # 学习率
-        self.cfg.optimizer.type = optimizer  # 优化器
         if optimizer == 'Adam':
             self.cfg.optimizer = dict(type='Adam', lr=lr,betas=(0.9, 0.999),eps=1e-8, weight_decay=0.0001)
         elif optimizer == 'Adagrad':
             self.cfg.optimizer = dict(type='Adagrad',lr=lr, lr_decay=0)
+        # 根据输入参数更新config文件
+        self.cfg.optimizer.lr = lr  # 学习率
+        self.cfg.optimizer.type = optimizer  # 优化器
         self.cfg.optimizer.weight_decay = weight_decay  # 优化器的衰减权重
         self.cfg.evaluation.metric = metric  # 验证指标
-        self.cfg.evaluation.interval = evaluation_interval # 验证间隔
         self.cfg.evaluation.save_best = save_best  #
         self.cfg.runner.max_epochs = epochs  # 最大的训练轮次
 
-        # 设置每 5 个训练批次输出一次日志
+        # 设置每 10 个训练批次输出一次日志
         self.cfg.log_config.interval = 10
         self.cfg.gpu_ids = range(1)
 
@@ -145,15 +149,14 @@ class MMClassification:
                   image=None,
                   show=True,
                   class_path="../dataset/classes/cls_classes.txt",
-                  save_fold='cls_result',
-                  encoding='utf-8'
+                  save_fold='cls_result'
                   ):
 
         if not checkpoint:
             checkpoint = os.path.join(self.cwd, 'checkpoints/cls_model/hand_gray/latest.pth')
 
         print("========= begin inference ==========")
-        classed_name = self.get_class(class_path, encoding)
+        classed_name = self.get_class(class_path)
         self.num_classes = len(classed_name)
 
         if self.num_classes != -1:
@@ -161,15 +164,59 @@ class MMClassification:
                 self.cfg.model.backbone.num_classes = self.num_classes
             else:
                 self.cfg.model.head.num_classes = self.num_classes
-        model = init_model(self.cfg, checkpoint, device=device)
-        model.CLASSES = classed_name
+
+        checkpoint = os.path.abspath(checkpoint) # pip修改2
+
+        
         results = []
         if (image[-1] != '/'):
-            img_array = mmcv.imread(image, flag='grayscale' if self.backbone == "LeNet" else 'color')
-            result = inference_model(model, img_array)  # 此处的model和外面的无关,纯局部变量
-            #if show == True:
-            #    show_result_pyplot(model, image, result)
-            model.show_result(image, result, show=show, out_file=os.path.join(save_fold, image))
+            if self.backbone != "LeNet":
+                model = init_model(self.cfg, checkpoint, device=device)
+                model.CLASSES = classed_name
+                img_array = mmcv.imread(image, flag='color')
+                result = inference_model(model, img_array)  # 此处的model和外面的无关,纯局部变量
+            else: 
+                # build the dataloader
+                dataset_path = os.getcwd()
+                f = open("test.txt",'w')
+                f.write(image)
+                f.write(" 1")
+                f.write('\n')
+                f.write("no.png 0")
+                f.close()
+                if not os.path.exists("test_set"):
+                    os.mkdir('test_set')
+                import shutil
+                if not os.path.exists(image):
+                    shutil.copyfile(image, os.path.join("test_set", image))
+                shutil.copyfile(image, os.path.join("test_set", "no.png"))
+                self.cfg.data.test.data_prefix = os.path.join(dataset_path,'test_set')
+                self.cfg.data.test.ann_file = os.path.join(dataset_path,'test.txt')
+                self.cfg.data.test.classes = os.path.abspath(class_path)
+
+                dataset = build_dataset(self.cfg.data.test)
+                # the extra round_up data will be removed during gpu/cpu collect
+                data_loader = build_dataloader(
+                    dataset,
+                    samples_per_gpu=self.cfg.data.samples_per_gpu,
+                    workers_per_gpu=self.cfg.data.workers_per_gpu,
+                    shuffle=False,
+                    round_up=True)
+                model = build_classifier(self.cfg.model)
+                checkpoint = load_checkpoint(model, checkpoint)
+                result = single_gpu_test(model,data_loader )
+
+                f = open(class_path, "r")
+                ff = f.readlines()
+                f.close()
+                # print("\n",np.argmax(result[0]), ff[np.argmax(result[0])][-1:])
+                pred_class = ff[np.argmax(result[0])] if ff[np.argmax(result[0])][-1:] != "\n" else ff[np.argmax(result[0])][:-1]
+                result = {
+                    'pred_label':np.argmax(result[0]),
+                    'pred_score':result[0][np.argmax(result[0])],
+                    'pred_class':pred_class,
+                }
+            model.show_result(image, result, show=show, out_file=os.path.join(save_fold, os.path.split(image)[1]))
             chinese_res = []
             tmp = {}
             tmp['标签'] = result['pred_label']
@@ -182,12 +229,14 @@ class MMClassification:
             print("========= finish inference ==========")
             return result
         else:
+            model = init_model(self.cfg, checkpoint, device=device)
+            model.CLASSES = classed_name
             img_dir = image
             mmcv.mkdir_or_exist(os.path.abspath(save_fold))
             chinese_results = []
             for i, img in enumerate(tqdm(os.listdir(img_dir))):
                 result = inference_model(model, img_dir + img)  # 此处的model和外面的无关,纯局部变量
-                model.show_result(img_dir + img, result, out_file=os.path.join(save_fold, img))
+                model.show_result(img_dir + img, result, out_file=os.path.join(save_fold, os.path.split(img)[1]))
                 chinese_res = []
                 chinese_res = []
                 tmp = {}
@@ -224,9 +273,9 @@ class MMClassification:
         self.cfg.data.test.ann_file = os.path.join(self.dataset_path, 'test.txt')
         self.cfg.data.test.classes = os.path.join(self.dataset_path, 'classes.txt')
 
-    def get_class(self, class_path, encoding = 'utf-8'):
+    def get_class(self, class_path):
         classes = []
-        with open(class_path, 'r', encoding = encoding) as f:
+        with open(class_path, 'r') as f:
             for name in f:
                 classes.append(name.strip('\n'))
         return classes
