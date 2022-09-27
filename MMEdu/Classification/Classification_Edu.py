@@ -64,6 +64,7 @@ class MMClassification:
 
         self.num_classes = num_classes
         self.chinese_res = None
+        self.is_sample = False
 
     def train(self, random_seed=0, save_fold=None, distributed=False, validate=True, device="cpu",
               metric='accuracy', save_best='auto', optimizer="SGD", epochs=100, lr=0.01, weight_decay=0.001,
@@ -140,9 +141,56 @@ class MMClassification:
         )
 
     def print_result(self, res=None):
-        print("检测结果如下：")
-        print(self.chinese_res)
+        if self.is_sample == True:
+            print("示例检测结果如下：")
+            sample_result = r"[{'标签': 2, '置信度': 1.0, '预测结果': 'scissors'}]"
+            print(sample_result)
+        else:
+            print("检测结果如下：")
+            print(self.chinese_res)
         return self.chinese_res
+
+
+    def load_checkpoint(self, device='cpu',
+                  checkpoint=None,
+                  class_path="../dataset/classes/cls_classes.txt",
+                  ):
+        if not checkpoint:
+            checkpoint = os.path.join(self.cwd, 'checkpoints/cls_model/hand_gray/latest.pth')
+
+        print("========= begin inference ==========")
+        classed_name = self.get_class(class_path)
+        self.num_classes = len(classed_name)
+        if self.num_classes != -1:
+            if 'num_classes' in self.cfg.model.backbone.keys():
+                self.cfg.model.backbone.num_classes = self.num_classes
+            else:
+                self.cfg.model.head.num_classes = self.num_classes
+
+        checkpoint = os.path.abspath(checkpoint) # pip修改2
+        self.infer_model = init_model(self.cfg, checkpoint, device=device)
+        self.infer_model.CLASSES = classed_name
+
+    def fast_inference(self, image, show=False, save_fold='cls_result'):
+        img_array = mmcv.imread(image, flag='color')
+        try:
+            self.infer_model
+        except:
+            print("请先使用load_checkpoint()方法加载权重！")
+            return 
+        result = inference_model(self.infer_model, img_array)  # 此处的model和外面的无关,纯局部变量
+        self.infer_model.show_result(image, result, show=show, out_file=os.path.join(save_fold, os.path.split(image)[1]))
+        chinese_res = []
+        tmp = {}
+        tmp['标签'] = result['pred_label']
+        tmp['置信度'] = result['pred_score']
+        tmp['预测结果'] = result['pred_class']
+        # img.append(tmp)
+        chinese_res.append(tmp)
+        # print(chinese_res)
+        self.chinese_res = chinese_res
+        # print("========= finish inference ==========")
+        return result
 
     def inference(self, device='cpu',
                   checkpoint=None,
@@ -151,6 +199,13 @@ class MMClassification:
                   class_path="../dataset/classes/cls_classes.txt",
                   save_fold='cls_result'
                   ):
+        if image == None:
+            self.is_sample = True
+            sample_return = """
+{'pred_label': 2, 'pred_score': 0.9930743, 'pred_class': 'scissors'}
+            """
+            return sample_return
+        self.is_sample = False
 
         if not checkpoint:
             checkpoint = os.path.join(self.cwd, 'checkpoints/cls_model/hand_gray/latest.pth')
@@ -184,13 +239,13 @@ class MMClassification:
                 f.write('\n')
                 f.write("no.png 0")
                 f.close()
-                if not os.path.exists("test_set"):
-                    os.mkdir('test_set')
+                if not os.path.exists("cache"):
+                    os.mkdir('cache')
                 import shutil
-                if not os.path.exists(image):
-                    shutil.copyfile(image, os.path.join("test_set", image))
-                shutil.copyfile(image, os.path.join("test_set", "no.png"))
-                self.cfg.data.test.data_prefix = os.path.join(dataset_path,'test_set')
+                if not os.path.exists(os.path.join("cache", image)):
+                    shutil.copyfile(image, os.path.join("cache", image))
+                shutil.copyfile(image, os.path.join("cache", "no.png"))
+                self.cfg.data.test.data_prefix = os.path.join(dataset_path,'cache')
                 self.cfg.data.test.ann_file = os.path.join(dataset_path,'test.txt')
                 self.cfg.data.test.classes = os.path.abspath(class_path)
 
@@ -205,7 +260,8 @@ class MMClassification:
                 model = build_classifier(self.cfg.model)
                 checkpoint = load_checkpoint(model, checkpoint)
                 result = single_gpu_test(model,data_loader )
-
+                os.remove("test.txt")
+                shutil.rmtree("cache")
                 f = open(class_path, "r")
                 ff = f.readlines()
                 f.close()
@@ -226,7 +282,7 @@ class MMClassification:
             chinese_res.append(tmp)
             # print(chinese_res)
             self.chinese_res = chinese_res
-            print("========= finish inference ==========")
+            print("\n========= finish inference ==========")
             return result
         else:
             model = init_model(self.cfg, checkpoint, device=device)
