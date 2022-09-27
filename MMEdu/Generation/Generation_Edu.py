@@ -11,15 +11,39 @@ import os
 
 
 class MMGeneration:
+    def sota():
+        pypath = os.path.abspath(__file__)
+        father = os.path.dirname(pypath)
+        models = os.path.join(father, 'models')
+        sota_model = []
+        for i in os.listdir(models):
+            if i[0] != '_':
+                sota_model.append(i)
+        return sota_model
+    
+
     def __init__(self, backbone='Pix2Pix', dataset_path = None):
         # 获取外部运行py的绝对路径
         self.cwd = os.path.dirname(os.getcwd())
         # 获取当前文件的绝对路径
         self.file_dirname = os.path.dirname(os.path.abspath(__file__))
+        self.save_fold = None
 
         self.backbone = backbone
         self.dataset_path = dataset_path
         self.checkpoint = None
+
+        backbone_path = os.path.join(
+            self.file_dirname, 'models', self.backbone)
+        ckpt_cfg_list = list(os.listdir(backbone_path))
+        for item in ckpt_cfg_list:
+            if item[-1] == 'y' and item[0] != '_':   #pip包修改1
+                self.config = os.path.join(backbone_path, item)
+            elif item[-1] == 'h':
+                self.checkpoint = os.path.join(backbone_path, item)
+            else:
+                # print("Warning!!! There is an unrecognized file in the backbone folder.")
+                pass
         
         self.backbonedict = {
             "Pix2Pix": os.path.join(self.file_dirname, 'models', 'Pix2Pix/Pix2Pix.py'),
@@ -36,7 +60,8 @@ class MMGeneration:
         if not self.save_fold:
             # 如果外部也没有传入save_fold，我们使用默认路径
             if not save_fold:
-                self.save_fold = os.path.join(self.cwd, '../checkpoints/gen')
+                self.save_fold = os.path.join(
+                    self.cwd, 'checkpoints/gen_model')
             # 如果外部传入save_fold，我们使用传入值
             else:
                 self.save_fold = save_fold
@@ -110,7 +135,7 @@ class MMGeneration:
                   infer_data = None,
                   save_path = "../results/gen_result.png"):
         if not pretrain_model:
-            pretrain_model = os.path.join(self.cwd, 'checkpoints/gen_model/ckpt/gen_model/latest.pth')
+            pretrain_model = os.path.join(self.cwd, 'checkpoints/gen_model/latest.pth')
             
         print("========= begin inference ==========")
 
@@ -135,6 +160,9 @@ class MMGeneration:
         # save images
         mmcv.mkdir_or_exist(os.path.dirname(self.save_path))
         utils.save_image(result, self.save_path)
+        
+        return result
+        
 
     def load_dataset(self, path):
         self.dataset_path = path
