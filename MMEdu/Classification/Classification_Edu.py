@@ -64,7 +64,6 @@ class MMClassification:
 
         self.num_classes = num_classes
         self.chinese_res = None
-        self.is_sample = False
 
     def train(self, random_seed=0, save_fold=None, distributed=False, validate=True, device="cpu",
               metric='accuracy', save_best='auto', optimizer="SGD", epochs=100, lr=0.01, weight_decay=0.001,
@@ -231,6 +230,7 @@ class MMClassification:
                 img_array = mmcv.imread(image, flag='color')
                 result = inference_model(model, img_array)  # 此处的model和外面的无关,纯局部变量
             else: 
+                image = image.split("/")[-1]
                 # build the dataloader
                 dataset_path = os.getcwd()
                 f = open("test.txt",'w')
@@ -242,6 +242,8 @@ class MMClassification:
                 if not os.path.exists("cache"):
                     os.mkdir('cache')
                 import shutil
+                print(image)
+
                 if not os.path.exists(os.path.join("cache", image)):
                     shutil.copyfile(image, os.path.join("cache", image))
                 shutil.copyfile(image, os.path.join("cache", "no.png"))
@@ -321,7 +323,7 @@ class MMClassification:
                 # if not os.path.exists(os.path.join("cache", image)):
                 #     shutil.copyfile(image, os.path.join("cache", image))
                 # shutil.copyfile(image, os.path.join("cache", "no.png"))
-                self.cfg.data.test.data_prefix = os.path.join(dataset_path,image)
+                self.cfg.data.test.data_prefix =os.path.join(dataset_path, image)
                 # self.cfg.data.test.ann_file = os.path.join(dataset_path,'test.txt')
                 self.cfg.data.test.classes = os.path.abspath(class_path)
 
@@ -342,20 +344,25 @@ class MMClassification:
                 ff = f.readlines()
                 f.close()
                 # print("\n",np.argmax(result[0]), ff[np.argmax(result[0])][-1:])
-                pred_class = ff[np.argmax(result[0])] if ff[np.argmax(result[0])][-1:] != "\n" else ff[np.argmax(result[0])][:-1]
-                result = {
-                    'pred_label':np.argmax(result[0]),
-                    'pred_score':result[0][np.argmax(result[0])],
-                    'pred_class':pred_class,
-                }
+                results = []
+                for i in range(len(result)):
+                    pred_class = ff[np.argmax(result[i])] if ff[np.argmax(result[i])][-1:] != "\n" else ff[np.argmax(result[i])][:-1]
+                    tmp_result = {
+                        'pred_label':np.argmax(result[i]),
+                        'pred_score':result[i][np.argmax(result[i])],
+                        'pred_class':pred_class,
+                    }
+                    results.append(tmp_result)
             # model.show_result(image, result, show=show, out_file=os.path.join(save_fold, os.path.split(image)[1]))
             chinese_res = []
-            tmp = {}
-            tmp['标签'] = result['pred_label']
-            tmp['置信度'] = result['pred_score']
-            tmp['预测结果'] = result['pred_class']
-            # img.append(tmp)
-            chinese_res.append(tmp)
+            for i in range(len(results)):
+                tmp = {
+                    '标签':results[i]['pred_label'],
+                    '置信度': results[i]['pred_score'],
+                    '预测结果':results[i]['pred_class']
+                }
+                # img.append(tmp)
+                chinese_res.append(tmp)
             # print(chinese_res)
             self.chinese_res = chinese_res
             print("\n========= finish inference ==========")
