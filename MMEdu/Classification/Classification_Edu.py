@@ -285,27 +285,80 @@ class MMClassification:
             print("\n========= finish inference ==========")
             return result
         else:
-            model = init_model(self.cfg, checkpoint, device=device)
-            model.CLASSES = classed_name
-            img_dir = image
-            mmcv.mkdir_or_exist(os.path.abspath(save_fold))
-            chinese_results = []
-            for i, img in enumerate(tqdm(os.listdir(img_dir))):
-                result = inference_model(model, img_dir + img)  # 此处的model和外面的无关,纯局部变量
-                model.show_result(img_dir + img, result, out_file=os.path.join(save_fold, os.path.split(img)[1]))
-                chinese_res = []
-                chinese_res = []
-                tmp = {}
-                tmp['标签'] = result['pred_label']
-                tmp['置信度'] = result['pred_score']
-                tmp['预测结果'] = result['pred_class']
-                # img.append(tmp)
-                chinese_res.append(tmp)
-                chinese_results.append(chinese_res)
-                results.append(result)
-            self.chinese_res = chinese_results
+            if self.backbone != "LeNet":
+                model = init_model(self.cfg, checkpoint, device=device)
+                model.CLASSES = classed_name
+                img_dir = image
+                mmcv.mkdir_or_exist(os.path.abspath(save_fold))
+                chinese_results = []
+                for i, img in enumerate(tqdm(os.listdir(img_dir))):
+                    result = inference_model(model, img_dir + img)  # 此处的model和外面的无关,纯局部变量
+                    model.show_result(img_dir + img, result, out_file=os.path.join(save_fold, os.path.split(img)[1]))
+                    chinese_res = []
+                    chinese_res = []
+                    tmp = {}
+                    tmp['标签'] = result['pred_label']
+                    tmp['置信度'] = result['pred_score']
+                    tmp['预测结果'] = result['pred_class']
+                    # img.append(tmp)
+                    chinese_res.append(tmp)
+                    chinese_results.append(chinese_res)
+                    results.append(result)
+                self.chinese_res = chinese_results
 
-        print("========= finish inference ==========")
+                print("========= finish inference ==========")
+            else:
+                dataset_path = os.getcwd()
+                # f = open("test.txt",'w')
+                # f.write(image)
+                # f.write(" 1")
+                # f.write('\n')
+                # f.write("no.png 0")
+                # f.close()
+                # if not os.path.exists("cache"):
+                #     os.mkdir('cache')
+                # import shutil
+                # if not os.path.exists(os.path.join("cache", image)):
+                #     shutil.copyfile(image, os.path.join("cache", image))
+                # shutil.copyfile(image, os.path.join("cache", "no.png"))
+                self.cfg.data.test.data_prefix = os.path.join(dataset_path,image)
+                # self.cfg.data.test.ann_file = os.path.join(dataset_path,'test.txt')
+                self.cfg.data.test.classes = os.path.abspath(class_path)
+
+                dataset = build_dataset(self.cfg.data.test)
+                # the extra round_up data will be removed during gpu/cpu collect
+                data_loader = build_dataloader(
+                    dataset,
+                    samples_per_gpu=self.cfg.data.samples_per_gpu,
+                    workers_per_gpu=self.cfg.data.workers_per_gpu,
+                    shuffle=False,
+                    round_up=True)
+                model = build_classifier(self.cfg.model)
+                checkpoint = load_checkpoint(model, checkpoint)
+                result = single_gpu_test(model,data_loader )
+                # os.remove("test.txt")
+                # shutil.rmtree("cache")
+                f = open(class_path, "r")
+                ff = f.readlines()
+                f.close()
+                # print("\n",np.argmax(result[0]), ff[np.argmax(result[0])][-1:])
+                pred_class = ff[np.argmax(result[0])] if ff[np.argmax(result[0])][-1:] != "\n" else ff[np.argmax(result[0])][:-1]
+                result = {
+                    'pred_label':np.argmax(result[0]),
+                    'pred_score':result[0][np.argmax(result[0])],
+                    'pred_class':pred_class,
+                }
+            # model.show_result(image, result, show=show, out_file=os.path.join(save_fold, os.path.split(image)[1]))
+            chinese_res = []
+            tmp = {}
+            tmp['标签'] = result['pred_label']
+            tmp['置信度'] = result['pred_score']
+            tmp['预测结果'] = result['pred_class']
+            # img.append(tmp)
+            chinese_res.append(tmp)
+            # print(chinese_res)
+            self.chinese_res = chinese_res
+            print("\n========= finish inference ==========")
 
         return results
 
