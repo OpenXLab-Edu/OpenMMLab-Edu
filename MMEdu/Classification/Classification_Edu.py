@@ -12,7 +12,7 @@ import numpy as np
 
 
 class MMClassification:
-    def sota():
+    def sota(self):
         pypath = os.path.abspath(__file__)
         father = os.path.dirname(pypath)
         models = os.path.join(father, 'models')
@@ -28,7 +28,15 @@ class MMClassification:
             num_classes=-1,
             dataset_path='../dataset/cls/hand_gray',
             # dataset_type = 'ImageNet'
+            **kwargs,
     ):
+        if len(kwargs) != 0:
+            info = "Error Code: -501. No such parameter: " + next(iter(kwargs.keys()))
+            raise Exception(info)
+        if backbone not in self.sota():
+            info = "Error Code: -302. No such argument: "+backbone
+            # print(info)
+            raise Exception(info)
 
         # 获取外部运行py的绝对路径
         self.cwd = os.path.dirname(os.getcwd())
@@ -64,10 +72,24 @@ class MMClassification:
 
         self.num_classes = num_classes
         self.chinese_res = None
+        self.is_sample = False
 
     def train(self, random_seed=0, save_fold=None, distributed=False, validate=True, device="cpu",
               metric='accuracy', save_best='auto', optimizer="SGD", epochs=100, lr=0.01, weight_decay=0.001,
-              checkpoint=None):
+              checkpoint=None,**kwargs):
+        if len(kwargs) != 0:
+            info = "Error Code: -501. No such parameter: " + next(iter(kwargs.keys()))
+            raise Exception(info)
+        if device not in ['cpu','cuda']:
+            info = "Error Code: -301. No such argument: "+ device
+            raise Exception(info)
+        if validate not in [True, False]:
+            info = "Error Code: -303. No such argument: "+ validate
+            raise Exception(info)
+        if checkpoint != None and checkpoint.split(".")[-1] != 'pth':
+            info = "Error Code: -202. Checkpoint file type error:"+ checkpoint
+            raise Exception(info)
+
         set_random_seed(seed=random_seed)
         # 获取config信息
         self.cfg = Config.fromfile(self.backbonedict[self.backbone])
@@ -89,6 +111,16 @@ class MMClassification:
 
         self.load_dataset(self.dataset_path)
 
+        datasets = None
+        try:
+            datasets = [build_dataset(self.cfg.data.train)]
+        except FileNotFoundError as err:
+            if not os.path.exists(self.dataset_path):
+                info = "Error Code: -101. No such dataset directory:" + self.dataset_path
+            else:
+                err = str(err).split(":")[-1]
+                info = "Error Code: -201. Dataset file type error.  No such file:"+ err
+            raise Exception(info)
         # 进行
         self.cfg.work_dir = self.save_fold
         # 创建工作目录
@@ -98,10 +130,14 @@ class MMClassification:
         if not checkpoint:
             model.init_weights()
         else:
-            load_checkpoint(model, checkpoint, map_location=torch.device('cpu'))
-            # model = init_model(self.cfg, checkpoint)
+            try:
+                load_checkpoint(model, checkpoint, map_location=torch.device(device))
+                # model = init_model(self.cfg, checkpoint)
+            except FileNotFoundError:
+                    info = "Error Code: -102. No such checkpoint file:" + checkpoint
+                    raise Exception(info)
 
-        datasets = [build_dataset(self.cfg.data.train)]
+
         # 添加类别属性以方便可视化
         model.CLASSES = datasets[0].CLASSES
 
@@ -153,9 +189,19 @@ class MMClassification:
     def load_checkpoint(self, device='cpu',
                   checkpoint=None,
                   class_path="../dataset/classes/cls_classes.txt",
+                  **kwargs,
                   ):
-        if not checkpoint:
-            checkpoint = os.path.join(self.cwd, 'checkpoints/cls_model/hand_gray/latest.pth')
+        if len(kwargs) != 0:
+            info = "Error Code: -501. No such parameter: "+ next(iter(kwargs.keys()))
+            raise Exception(info)
+        if device not in ['cpu','cuda']:
+            info = "Error Code: -301. No such argument: "+ device
+            raise Exception(info)
+        if checkpoint != None and checkpoint.split(".")[-1] != 'pth':
+            info = "Error Code: -202. Checkpoint file type error:"+ checkpoint
+            raise Exception(info)
+        # if not checkpoint:
+            # checkpoint = os.path.join(self.cwd, 'checkpoints/cls_model/hand_gray/latest.pth')
 
         print("========= begin inference ==========")
         classed_name = self.get_class(class_path)
@@ -167,10 +213,17 @@ class MMClassification:
                 self.cfg.model.head.num_classes = self.num_classes
 
         checkpoint = os.path.abspath(checkpoint) # pip修改2
-        self.infer_model = init_model(self.cfg, checkpoint, device=device)
+        try:
+            self.infer_model = init_model(self.cfg, checkpoint, device=device)
+        except FileNotFoundError:
+            info = "Error Code: -102. No such checkpoint file:"+ checkpoint
+            raise Exception(info)
         self.infer_model.CLASSES = classed_name
 
-    def fast_inference(self, image, show=False, save_fold='cls_result'):
+    def fast_inference(self, image, show=False, save_fold='cls_result',**kwargs):
+        if len(kwargs) != 0:
+            info = "Error Code: -501. No such parameter: " + next(iter(kwargs.keys()))
+            raise Exception(info)
         img_array = mmcv.imread(image, flag='color')
         try:
             self.infer_model
@@ -192,20 +245,40 @@ class MMClassification:
         return result
 
     def inference(self, device='cpu',
-                  checkpoint=None,
-                  image=None,
-                  show=True,
-                  class_path="../dataset/classes/cls_classes.txt",
-                  save_fold='cls_result'
-                  ):
-        if image == None:
+        checkpoint=None,
+        image=None,
+        show=True,
+        class_path="../dataset/classes/cls_classes.txt",
+        save_fold='cls_result',
+        **kwargs,
+        ):
+        if len(kwargs) != 0:
+            info = "Error Code: -501. No such parameter: " + next(iter(kwargs.keys()))
+            raise Exception(info)
+        if device not in ['cpu','cuda']:
+            info = "Error Code: -301. No such argument: "+ device
+            raise Exception(info)
+        if image == None: # 传入图片为空，示例输出
             self.is_sample = True
             sample_return = """
 {'pred_label': 2, 'pred_score': 0.9930743, 'pred_class': 'scissors'}
             """
             return sample_return
         self.is_sample = False
+        # if not isinstance(image,(str, np.array)):
+        if not isinstance(image,str): # 传入图片格式，仅支持str图片路径
+            print("Error Code: -304. No such argument:", image,"which is" ,type(image))
+            return
+        if not os.path.exists(image):
+            info = "Error Code: -103. No such file:"+ image
+            raise Exception(info)
+        if image[-1] != '/' and image.split(".")[-1].lower() not in ["png","jpg","jpeg","bmp"]:
+            info = "Error Code: -203. File type error:"+ image
+            raise Exception(info)
 
+        if checkpoint != None and checkpoint.split(".")[-1] != 'pth':
+            info = "Error Code: -202. Checkpoint file type error:"+ checkpoint
+            raise Exception(info)
         if not checkpoint:
             checkpoint = os.path.join(self.cwd, 'checkpoints/cls_model/hand_gray/latest.pth')
 
@@ -231,6 +304,7 @@ class MMClassification:
                 result = inference_model(model, img_array)  # 此处的model和外面的无关,纯局部变量
             else: 
                 image = image.split("/")[-1]
+
                 # build the dataloader
                 dataset_path = os.getcwd()
                 f = open("test.txt",'w')
@@ -260,7 +334,11 @@ class MMClassification:
                     shuffle=False,
                     round_up=True)
                 model = build_classifier(self.cfg.model)
-                checkpoint = load_checkpoint(model, checkpoint)
+                try:
+                    checkpoint = load_checkpoint(model, checkpoint)
+                except FileNotFoundError:
+                    info = "Error Code: -102. No such checkpoint file:"+ checkpoint
+                    raise Exception(info)
                 result = single_gpu_test(model,data_loader )
                 os.remove("test.txt")
                 shutil.rmtree("cache")
@@ -277,6 +355,10 @@ class MMClassification:
             model.show_result(image, result, show=show, out_file=os.path.join(save_fold, os.path.split(image)[1]))
             chinese_res = []
             tmp = {}
+            if isinstance(result['pred_label'], np.int64):
+                result['pred_label'] = int(result['pred_label'])
+            if isinstance( result['pred_score'], np.float32):
+                result['pred_score'] = float( result['pred_score'])
             tmp['标签'] = result['pred_label']
             tmp['置信度'] = result['pred_score']
             tmp['预测结果'] = result['pred_class']
@@ -299,6 +381,10 @@ class MMClassification:
                     chinese_res = []
                     chinese_res = []
                     tmp = {}
+                    if isinstance(result['pred_label'], np.int64):
+                        result['pred_label'] = int(result['pred_label'])
+                    if isinstance( result['pred_score'], np.float32):
+                        result['pred_score'] = float( result['pred_score'])
                     tmp['标签'] = result['pred_label']
                     tmp['置信度'] = result['pred_score']
                     tmp['预测结果'] = result['pred_class']
@@ -336,7 +422,12 @@ class MMClassification:
                     shuffle=False,
                     round_up=True)
                 model = build_classifier(self.cfg.model)
-                checkpoint = load_checkpoint(model, checkpoint)
+                # checkpoint = None
+                try:
+                    checkpoint = load_checkpoint(model, checkpoint)
+                except FileNotFoundError:
+                    info = "Error Code: -102. No such checkpoint file:"+ checkpoint
+                    raise Exception(info)
                 result = single_gpu_test(model,data_loader )
                 # os.remove("test.txt")
                 # shutil.rmtree("cache")
@@ -347,9 +438,13 @@ class MMClassification:
                 results = []
                 for i in range(len(result)):
                     pred_class = ff[np.argmax(result[i])] if ff[np.argmax(result[i])][-1:] != "\n" else ff[np.argmax(result[i])][:-1]
+                    if isinstance(np.argmax(result[i]), np.int64):
+                        pred_label = int(np.argmax(result[i]))
+                    if isinstance(result[i][np.argmax(result[i])], np.float32):
+                        pred_score = float(result[i][np.argmax(result[i])])
                     tmp_result = {
-                        'pred_label':np.argmax(result[i]),
-                        'pred_score':result[i][np.argmax(result[i])],
+                        'pred_label': pred_label, # np.argmax(result[i]),
+                        'pred_score':pred_score, # result[i][np.argmax(result[i])],
                         'pred_class':pred_class,
                     }
                     results.append(tmp_result)
@@ -369,9 +464,26 @@ class MMClassification:
 
         return results
 
-    def load_dataset(self, path):
+    def load_dataset(self, path,**kwargs):
+        if len(kwargs) != 0:
+            info = "Error Code: -501. No such parameter: "+ next(iter(kwargs.keys()))
+            raise Exception(info)
         self.dataset_path = path
-
+        if not isinstance(path, str):
+            info = "Error Code: -201. Dataset file type error, which should be <class 'str'> instead of "+ type(path)+"."
+            raise Exception(info)
+        if not os.path.exists(path):   # 数据集路径不存在
+            info = "Error Code: -101. No such dateset directory: "+ path
+            raise Exception(info)
+        val_set = os.path.join(path, 'val_set')
+        val_txt = os.path.join(path, 'val.txt')
+        if os.path.exists(val_set) and os.path.exists(val_txt):
+            val_num = 0
+            for i in os.listdir(val_set):
+                val_num += len(os.listdir(os.path.join(val_set,i)))
+            if val_num != len(open(val_txt).readlines()):
+                info = "Error Code: -201. Dataset file type error. The number of val set images does not match that in val.txt"
+                raise Exception(info)
         self.cfg.img_norm_cfg = dict(
             mean=[124.508, 116.050, 106.438],
             std=[58.577, 57.310, 57.437],
@@ -388,6 +500,7 @@ class MMClassification:
         self.cfg.data.test.data_prefix = os.path.join(self.dataset_path, 'test_set')
         self.cfg.data.test.ann_file = os.path.join(self.dataset_path, 'test.txt')
         self.cfg.data.test.classes = os.path.join(self.dataset_path, 'classes.txt')
+
 
     def get_class(self, class_path):
         classes = []
