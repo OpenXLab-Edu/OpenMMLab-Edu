@@ -33,33 +33,39 @@ class MMClassification:
         if len(kwargs) != 0:
             info = "Error Code: -501. No such parameter: " + next(iter(kwargs.keys()))
             raise Exception(info)
-        if backbone not in self.sota():
-            info = "Error Code: -302. No such argument: "+backbone
-            # print(info)
-            raise Exception(info)
-
         # 获取外部运行py的绝对路径
         self.cwd = os.path.dirname(os.getcwd())
         # 获取当前文件的绝对路径
         self.file_dirname = os.path.dirname(os.path.abspath(__file__))
         self.save_fold = None
-
-        self.config = os.path.join(self.file_dirname, 'models', 'LeNet/LeNet.py')
-        self.checkpoint = os.path.join(self.file_dirname, 'models', 'LeNet/LeNet.pth')
-
-        self.backbone = backbone
-        backbone_path = os.path.join(self.file_dirname, 'models', self.backbone)
-        ckpt_cfg_list = list(os.listdir(backbone_path))
-        for item in ckpt_cfg_list:
-            if item[-1] == 'y' and item[0] != '_':  #pip修改1
-                self.config = os.path.join(backbone_path, item)
-            elif item[-1] == 'h':
-                self.checkpoint = os.path.join(backbone_path, item)
+        if backbone not in self.sota():
+            print(backbone, os.path.exists(backbone))
+            if os.path.exists(backbone): # 传入配置文件
+                self.config = backbone
+                self.cfg = Config.fromfile(self.config)
+                self.backbone = backbone
             else:
-                #     print("Warning!!! There is an unrecognized file in the backbone folder.")
-                pass
+                info = "Error Code: -302. No such argument: "+backbone
+                # print(info)
+                raise Exception(info)
+        elif backbone in self.sota():
 
-        self.cfg = Config.fromfile(self.config)
+            self.config = os.path.join(self.file_dirname, 'models', 'LeNet/LeNet.py')
+            self.checkpoint = os.path.join(self.file_dirname, 'models', 'LeNet/LeNet.pth')
+
+            self.backbone = backbone
+            backbone_path = os.path.join(self.file_dirname, 'models', self.backbone)
+            ckpt_cfg_list = list(os.listdir(backbone_path))
+            for item in ckpt_cfg_list:
+                if item[-1] == 'y' and item[0] != '_':  #pip修改1
+                    self.config = os.path.join(backbone_path, item)
+                elif item[-1] == 'h':
+                    self.checkpoint = os.path.join(backbone_path, item)
+                else:
+                    #     print("Warning!!! There is an unrecognized file in the backbone folder.")
+                    pass
+
+            self.cfg = Config.fromfile(self.config)
         self.dataset_path = dataset_path
         self.lr = None
         self.backbonedict = {
@@ -92,7 +98,10 @@ class MMClassification:
 
         set_random_seed(seed=random_seed)
         # 获取config信息
-        self.cfg = Config.fromfile(self.backbonedict[self.backbone])
+        if self.backbone.split('.')[-1] == 'py':
+            self.cfg = Config.fromfile(self.backbone)
+        else:
+            self.cfg = Config.fromfile(self.backbonedict[self.backbone])
 
         # 如果外部不指定save_fold
         if not self.save_fold:
@@ -231,7 +240,8 @@ class MMClassification:
             print("请先使用load_checkpoint()方法加载权重！")
             return 
         result = inference_model(self.infer_model, img_array)  # 此处的model和外面的无关,纯局部变量
-        self.infer_model.show_result(image, result, show=show, out_file=os.path.join(save_fold, os.path.split(image)[1]))
+        # self.infer_model.show_result(image, result, show=show, out_file=os.path.join(save_fold, os.path.split(image)[1]))
+        show_result_pyplot(self.infer_model, image, result)
         chinese_res = []
         tmp = {}
         tmp['标签'] = result['pred_label']
