@@ -9,6 +9,7 @@ from mmcls.datasets import  build_dataloader,build_dataset
 from mmcv.runner import load_checkpoint
 from tqdm import tqdm
 import numpy as np
+import cv2
 
 
 class MMClassification:
@@ -39,13 +40,12 @@ class MMClassification:
         self.file_dirname = os.path.dirname(os.path.abspath(__file__))
         self.save_fold = None
         if backbone not in self.sota():
-            print(backbone, os.path.exists(backbone))
             if os.path.exists(backbone): # 传入配置文件
                 self.config = backbone
                 self.cfg = Config.fromfile(self.config)
                 self.backbone = backbone
             else:
-                info = "Error Code: -302. No such argument: "+backbone
+                info = "Error Code: -302. No such argument: "+backbone +". Currently "+str(self.sota())+" is available."
                 # print(info)
                 raise Exception(info)
         elif backbone in self.sota():
@@ -172,6 +172,7 @@ class MMClassification:
         self.cfg.gpu_ids = range(1)
 
         self.cfg.seed = random_seed
+        self.cfg.device = device
 
         train_model(
             model,
@@ -233,6 +234,10 @@ class MMClassification:
         if len(kwargs) != 0:
             info = "Error Code: -501. No such parameter: " + next(iter(kwargs.keys()))
             raise Exception(info)
+        import PIL
+        if type(image) == PIL.PngImagePlugin.PngImageFile:
+            image = np.array(image)
+            image = cv2.cvtColor(image, cv2.COLOR_RGB2BGR)
         img_array = mmcv.imread(image, flag='color')
         try:
             self.infer_model
@@ -241,7 +246,8 @@ class MMClassification:
             return 
         result = inference_model(self.infer_model, img_array)  # 此处的model和外面的无关,纯局部变量
         # self.infer_model.show_result(image, result, show=show, out_file=os.path.join(save_fold, os.path.split(image)[1]))
-        show_result_pyplot(self.infer_model, image, result)
+        if show:
+            show_result_pyplot(self.infer_model, image, result)
         chinese_res = []
         tmp = {}
         tmp['标签'] = result['pred_label']
@@ -277,8 +283,8 @@ class MMClassification:
         self.is_sample = False
         # if not isinstance(image,(str, np.array)):
         if not isinstance(image,str): # 传入图片格式，仅支持str图片路径
-            print("Error Code: -304. No such argument:", image,"which is" ,type(image))
-            return
+            info = "Error Code: -304. No such argument:"+ image+"which is" +type(image)
+            raise Exception(info)
         if not os.path.exists(image):
             info = "Error Code: -103. No such file:"+ image
             raise Exception(info)
@@ -313,12 +319,12 @@ class MMClassification:
                 img_array = mmcv.imread(image, flag='color')
                 result = inference_model(model, img_array)  # 此处的model和外面的无关,纯局部变量
             else: 
-                image = image.split("/")[-1]
+                imagename = image.split("/")[-1]
 
                 # build the dataloader
                 dataset_path = os.getcwd()
                 f = open("test.txt",'w')
-                f.write(image)
+                f.write(imagename)
                 f.write(" 1")
                 f.write('\n')
                 f.write("no.png 0")
@@ -326,10 +332,8 @@ class MMClassification:
                 if not os.path.exists("cache"):
                     os.mkdir('cache')
                 import shutil
-                print(image)
-
-                if not os.path.exists(os.path.join("cache", image)):
-                    shutil.copyfile(image, os.path.join("cache", image))
+                if not os.path.exists(os.path.join("cache", imagename)):
+                    shutil.copyfile(image, os.path.join("cache", imagename))
                 shutil.copyfile(image, os.path.join("cache", "no.png"))
                 self.cfg.data.test.data_prefix = os.path.join(dataset_path,'cache')
                 self.cfg.data.test.ann_file = os.path.join(dataset_path,'test.txt')
