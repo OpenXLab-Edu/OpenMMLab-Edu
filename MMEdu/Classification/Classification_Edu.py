@@ -11,6 +11,7 @@ from tqdm import tqdm
 import numpy as np
 import cv2
 
+
 class MMClassification:
     def sota(self):
         pypath = os.path.abspath(__file__)
@@ -288,6 +289,7 @@ class MMClassification:
             info = "Error Code: -103. No such file:"+ image
             raise Exception(info)
         if os.path.isfile(image) and image.split(".")[-1].lower() not in ["png","jpg","jpeg","bmp"]:
+
             info = "Error Code: -203. File type error:"+ image
             raise Exception(info)
 
@@ -451,6 +453,7 @@ class MMClassification:
                 results = []
 
                 result = result[0]
+
                 for i in range(len(result)):
                     pred_class = ff[np.argmax(result[i])] if ff[np.argmax(result[i])][-1:] != "\n" else ff[np.argmax(result[i])][:-1]
                     if isinstance(np.argmax(result[i]), np.int64):
