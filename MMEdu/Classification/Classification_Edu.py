@@ -288,7 +288,8 @@ class MMClassification:
         if not os.path.exists(image):
             info = "Error Code: -103. No such file:"+ image
             raise Exception(info)
-        if image[-1] != '/' and image.split(".")[-1].lower() not in ["png","jpg","jpeg","bmp"]:
+        if os.path.isfile(image) and image.split(".")[-1].lower() not in ["png","jpg","jpeg","bmp"]:
+
             info = "Error Code: -203. File type error:"+ image
             raise Exception(info)
 
@@ -312,7 +313,7 @@ class MMClassification:
 
         
         results = []
-        if (image[-1] != '/'):
+        if os.path.isfile(image):
             if self.backbone != "LeNet":
                 model = init_model(self.cfg, checkpoint, device=device)
                 model.CLASSES = classed_name
@@ -411,23 +412,24 @@ class MMClassification:
                 print("========= finish inference ==========")
             else:
                 dataset_path = os.getcwd()
-                # f = open("test.txt",'w')
-                # f.write(image)
-                # f.write(" 1")
-                # f.write('\n')
-                # f.write("no.png 0")
-                # f.close()
-                # if not os.path.exists("cache"):
-                #     os.mkdir('cache')
-                # import shutil
-                # if not os.path.exists(os.path.join("cache", image)):
-                #     shutil.copyfile(image, os.path.join("cache", image))
-                # shutil.copyfile(image, os.path.join("cache", "no.png"))
-                self.cfg.data.test.data_prefix =os.path.join(dataset_path, image)
+                dirname = [x.strip() for x in image.split('/') if x.strip() != ''][-1]
+
+                f = open(class_path, "r")
+                ff = f.readlines()
+                f.close()
+                import shutil
+                if os.path.exists(os.path.join(dataset_path, 'cache')):
+                    shutil.rmtree("cache")
+                os.mkdir(os.path.join(dataset_path, 'cache'))
+                shutil.copytree(image, os.path.join(dataset_path, 'cache', dirname))
+                for i in range(len(ff)-1):
+                    dummy_folder = os.path.join(dataset_path,'cache','dummy'+str(i))
+                    os.mkdir(dummy_folder)
+                self.cfg.data.test.data_prefix = os.path.join(dataset_path, 'cache')
                 # self.cfg.data.test.ann_file = os.path.join(dataset_path,'test.txt')
                 self.cfg.data.test.classes = os.path.abspath(class_path)
-
                 dataset = build_dataset(self.cfg.data.test)
+
                 # the extra round_up data will be removed during gpu/cpu collect
                 data_loader = build_dataloader(
                     dataset,
@@ -442,14 +444,16 @@ class MMClassification:
                 except FileNotFoundError:
                     info = "Error Code: -102. No such checkpoint file:"+ checkpoint
                     raise Exception(info)
-                result = single_gpu_test(model,data_loader )
+                result = single_gpu_test(model,data_loader)
+                shutil.rmtree("cache")
                 # os.remove("test.txt")
                 # shutil.rmtree("cache")
-                f = open(class_path, "r")
-                ff = f.readlines()
-                f.close()
+
                 # print("\n",np.argmax(result[0]), ff[np.argmax(result[0])][-1:])
                 results = []
+
+                result = result[0]
+
                 for i in range(len(result)):
                     pred_class = ff[np.argmax(result[i])] if ff[np.argmax(result[i])][-1:] != "\n" else ff[np.argmax(result[i])][:-1]
                     if isinstance(np.argmax(result[i]), np.int64):
