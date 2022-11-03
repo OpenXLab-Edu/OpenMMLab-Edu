@@ -67,7 +67,7 @@ class MMDetection:
         self.chinese_res = None
         self.is_sample = False
 
-    def train(self, random_seed=0, save_fold=None, distributed=False, validate=True,
+    def train(self, random_seed=0, save_fold=None, distributed=False, validate=True,device='cpu',
               metric='bbox', save_best='bbox_mAP', optimizer="SGD", epochs=100, lr=0.001, weight_decay=0.001, Frozen_stages=1,
               checkpoint=None):
 
@@ -110,7 +110,7 @@ class MMDetection:
             model.init_weights()
         else:
             checkpoint = os.path.abspath(checkpoint) # pip修改2
-            load_checkpoint(model, checkpoint, map_location=torch.device('cpu'))
+            load_checkpoint(model, checkpoint, map_location=torch.device(device))
 
         model.CLASSES = self.cfg.classes
         if optimizer == 'Adam':
