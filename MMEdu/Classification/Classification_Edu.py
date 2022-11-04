@@ -452,7 +452,7 @@ class MMClassification:
                 # print("\n",np.argmax(result[0]), ff[np.argmax(result[0])][-1:])
                 results = []
 
-                result = result[0]
+                # result = result[0]
 
                 for i in range(len(result)):
                     pred_class = ff[np.argmax(result[i])] if ff[np.argmax(result[i])][-1:] != "\n" else ff[np.argmax(result[i])][:-1]
