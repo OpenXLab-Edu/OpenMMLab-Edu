@@ -414,6 +414,7 @@ class MMClassification:
                     'pred_class': pred_class,
                 }
                 results.append(tmp_result)
+
             # model.show_result(image, result, show=show, out_file=os.path.join(save_fold, os.path.split(image)[1]))
             chinese_res = []
             for i in range(len(results)):
