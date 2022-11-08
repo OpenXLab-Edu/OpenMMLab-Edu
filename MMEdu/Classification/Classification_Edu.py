@@ -374,7 +374,6 @@ class MMClassification:
                 # checkpoint = None
                 results_tmp = single_gpu_test(self.infer_model, data_loader)
             else:
-                dataset_path = os.getcwd()
                 dirname = [x.strip() for x in image.split('/') if x.strip() != ''][-1]
                 import shutil
                 if os.path.exists(os.path.join(dataset_path, 'cache')):
