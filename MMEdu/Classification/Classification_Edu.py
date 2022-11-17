@@ -10,6 +10,8 @@ from mmcv.runner import load_checkpoint
 from tqdm import tqdm
 import numpy as np
 import cv2
+from mmcv.parallel import collate, scatter
+from mmcls.datasets.pipelines import Compose
 
 class MMClassification:
     def sota(self):
@@ -78,6 +80,7 @@ class MMClassification:
         self.num_classes = num_classes
         self.chinese_res = None
         self.is_sample = False
+        self.image_type = ""
 
     def train(self, random_seed=0, save_fold=None, distributed=False, validate=True, device="cpu",
               metric='accuracy', save_best='auto', optimizer="SGD", epochs=100, lr=0.01, weight_decay=0.001,
@@ -88,6 +91,11 @@ class MMClassification:
         if device not in ['cpu','cuda']:
             info = "Error Code: -301. No such argument: "+ device
             raise Exception(info)
+        is_cuda  = torch.cuda.is_available()
+        if device == 'cpu' and is_cuda:
+            print("You can use  'device=cuda' to accelerate !")
+        elif device == 'cuda' and not is_cuda:
+            raise Exception("Error Code: -301. Your device doesn't support cuda.")
         if validate not in [True, False]:
             info = "Error Code: -303. No such argument: "+ validate
             raise Exception(info)
@@ -186,18 +194,19 @@ class MMClassification:
 
     def print_result(self, res=None):
         if self.is_sample == True:
-            print("示例检测结果如下：")
+            print("示例分类结果如下：")
             sample_result = r"[{'标签': 2, '置信度': 1.0, '预测结果': 'scissors'}]"
             print(sample_result)
         else:
-            print("检测结果如下：")
+            print("分类结果如下：")
             print(self.chinese_res)
         return self.chinese_res
 
 
-    def load_checkpoint(self, device='cpu',
+    def load_checkpoint(self,
                   checkpoint=None,
                   class_path="../dataset/classes/cls_classes.txt",
+                  device='cpu',
                   **kwargs,
                   ):
         if len(kwargs) != 0:
@@ -206,12 +215,17 @@ class MMClassification:
         if device not in ['cpu','cuda']:
             info = "Error Code: -301. No such argument: "+ device
             raise Exception(info)
+        is_cuda  = torch.cuda.is_available()
+        if device == 'cpu' and is_cuda:
+            print("You can use  'device=cuda' to accelerate !")
+        elif device == 'cuda' and not is_cuda:
+            raise Exception("Error Code: -301. Your device doesn't support cuda.")
         if checkpoint != None and checkpoint.split(".")[-1] != 'pth':
             info = "Error Code: -202. Checkpoint file type error:"+ checkpoint
             raise Exception(info)
         # if not checkpoint:
             # checkpoint = os.path.join(self.cwd, 'checkpoints/cls_model/hand_gray/latest.pth')
-
+        self.device = device
         print("========= begin inference ==========")
         classed_name = self.get_class(class_path)
         self.class_path = class_path
@@ -245,7 +259,12 @@ class MMClassification:
         if device not in ['cpu','cuda']:
             info = "Error Code: -301. No such argument: "+ device
             raise Exception(info)
-        if image == None: # 传入图片为空，示例输出
+        is_cuda  = torch.cuda.is_available()
+        if device == 'cpu' and is_cuda:
+            print("You can use  'device=cuda' to accelerate !")
+        elif device == 'cuda' and not is_cuda:
+            raise Exception("Error Code: -301. Your device doesn't support cuda.")
+        if type(image)!=np.ndarray and image == None: # 传入图片为空，示例输出
             self.is_sample = True
             sample_return = """
 {'pred_label': 2, 'pred_score': 0.9930743, 'pred_class': 'scissors'}
@@ -253,14 +272,13 @@ class MMClassification:
             return sample_return
         self.is_sample = False
         # if not isinstance(image,(str, np.array)):
-        if not isinstance(image,str): # 传入图片格式，仅支持str图片路径
-            info = "Error Code: -304. No such argument:"+ image+"which is" +type(image)
-            raise Exception(info)
-        if not os.path.exists(image):
+        # if not isinstance(image,str): # 传入图片格式，仅支持str图片路径
+        #     info = "Error Code: -304. No such argument:"+ image+"which is" +type(image)
+        #     raise Exception(info)
+        if isinstance(image,str) and not os.path.exists(image):
             info = "Error Code: -103. No such file:"+ image
             raise Exception(info)
         if os.path.isfile(image) and image.split(".")[-1].lower() not in ["png","jpg","jpeg","bmp"]:
-
             info = "Error Code: -203. File type error:"+ image
             raise Exception(info)
 
@@ -278,11 +296,14 @@ class MMClassification:
         if len(kwargs) != 0:
             info = "Error Code: -501. No such parameter: " + next(iter(kwargs.keys()))
             raise Exception(info)
+        import PIL
+        # img_array = mmcv.imread(image, flag='color')
         try:
             self.infer_model
         except:
             print("请先使用load_checkpoint()方法加载权重！")
             return
+
 
         print("========= begin inference ==========")
         classed_name = self.infer_model.CLASSES
@@ -290,11 +311,63 @@ class MMClassification:
 
         results = []
         dataset_path = os.getcwd()
-        if os.path.isfile(image):
-            if self.backbone != "LeNet":
+        if type(image) == PIL.PngImagePlugin.PngImageFile: # 以PIL读入图片
+            self.image_type = "pil"
+            image = np.array(image)
+
+        if type(image) == np.ndarray:
+            if self.cfg.data.test.pipeline[0]['type'] == 'LoadImageFromFile':
+                self.cfg.data.test.pipeline.pop(0)
+
+            if self.image_type != "pil": self.image_type = "numpy"
+            print("{} image".format(self.image_type))
+
+            if self.backbone != "LeNet":  # 单张图片 其他网络
+                image = cv2.cvtColor(image, cv2.COLOR_RGB2BGR)
                 img_array = mmcv.imread(image, flag='color')
                 result = inference_model(self.infer_model, img_array)  # 此处的model和外面的无关,纯局部变量
             else:
+                image = cv2.cvtColor(image, cv2.COLOR_RGB2BGR)
+                img_gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+                data = dict(img=img_gray)
+                test_pipeline = Compose(self.cfg.data.test.pipeline)
+                data = test_pipeline(data)
+                # data = scatter([data], [self.device])[0]
+                data_loader = build_dataloader(
+                    [data,data],
+                    samples_per_gpu=self.cfg.data.samples_per_gpu,
+                    workers_per_gpu=self.cfg.data.workers_per_gpu,
+                    shuffle=False,
+                    round_up=True)
+                result = self.batch_infer(self.infer_model, data_loader)
+                ff = classed_name
+                pred_class = ff[np.argmax(result[0])] if ff[np.argmax(result[0])][-1:] != "\n" else ff[np.argmax(
+                    result[0])][:-1]
+                result = {
+                    'pred_label': np.argmax(result[0]),
+                    'pred_score': result[0][np.argmax(result[0])],
+                    'pred_class': pred_class,
+                }
+
+            self.infer_model.show_result(image, result, show=show, out_file=os.path.join(save_fold, "{}img.jpg".format(self.image_type)))
+            chinese_res = []
+            tmp = {}
+            if isinstance(result['pred_label'], np.int64):
+                result['pred_label'] = int(result['pred_label'])
+            if isinstance(result['pred_score'], np.float32):
+                result['pred_score'] = float(result['pred_score'])
+            tmp['标签'] = result['pred_label']
+            tmp['置信度'] = result['pred_score']
+            tmp['预测结果'] = result['pred_class']
+            chinese_res.append(tmp)
+            self.chinese_res = chinese_res
+
+        elif os.path.isfile(image): # 以路径读入图片
+            if self.backbone != "LeNet": # 单张图片 其他网络
+                img_array = mmcv.imread(image, flag='color')
+                result = inference_model(self.infer_model, img_array)  # 此处的model和外面的无关,纯局部变量
+            else: # 单张图片 Lenet
+                print("+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++")
                 imagename = image.split("/")[-1]
 
                 # build the dataloader
@@ -322,7 +395,10 @@ class MMClassification:
                     workers_per_gpu=self.cfg.data.workers_per_gpu,
                     shuffle=False,
                     round_up=True)
-                result = single_gpu_test(self.infer_model, data_loader)
+                print(data_loader)
+
+                result = self.batch_infer(self.infer_model, data_loader)
+                #—————————————————————————————————————————————————————————————————————————
                 os.remove("test.txt")
                 shutil.rmtree("cache")
                 ff = classed_name
@@ -344,6 +420,7 @@ class MMClassification:
             tmp['标签'] = result['pred_label']
             tmp['置信度'] = result['pred_score']
             tmp['预测结果'] = result['pred_class']
+            print("tmp", tmp)
             # img.append(tmp)
             chinese_res.append(tmp)
             # print(chinese_res)
@@ -351,7 +428,7 @@ class MMClassification:
             print("\n========= finish inference ==========")
             return result
         else:
-            if self.backbone != "LeNet":
+            if self.backbone != "LeNet": # 文件夹 其他网络
                 f = open("test.txt", 'w')
                 for image_name in os.listdir(image):
                     f.write(image_name)
@@ -371,10 +448,8 @@ class MMClassification:
                     workers_per_gpu=self.cfg.data.workers_per_gpu,
                     shuffle=False,
                     round_up=True)
-                # checkpoint = None
-                results_tmp = single_gpu_test(self.infer_model, data_loader)
-            else:
-                dataset_path = os.getcwd()
+
+            else: # 文件夹 Lenet
                 dirname = [x.strip() for x in image.split('/') if x.strip() != ''][-1]
                 import shutil
                 if os.path.exists(os.path.join(dataset_path, 'cache')):
@@ -387,6 +462,7 @@ class MMClassification:
                 self.cfg.data.test.data_prefix = os.path.join(dataset_path, 'cache')
                 self.cfg.data.test.classes = os.path.abspath(self.class_path)
                 dataset = build_dataset(self.cfg.data.test)
+                print(dataset)
                 # the extra round_up data will be removed during gpu/cpu collect
                 data_loader = build_dataloader(
                     dataset,
@@ -394,26 +470,30 @@ class MMClassification:
                     workers_per_gpu=self.cfg.data.workers_per_gpu,
                     shuffle=False,
                     round_up=True)
-                results_tmp = single_gpu_test(self.infer_model, data_loader)
+
+            # ————————————————————————————————single_gpu_test————————————————
+            results_tmp = self.batch_infer(self.infer_model, data_loader)
+
+            if os.path.exists(os.path.join(dataset_path, 'cache')):
                 shutil.rmtree("cache")
 
             results = []
             for i in range(len(results_tmp)):
-                pred_class = classed_name[np.argmax(results_tmp[i])] if classed_name[np.argmax(results_tmp[i])][-1:] != "\n" else classed_name[
-                                                                                                        np.argmax(
-                                                                                                            results_tmp[
-                                                                                                                i])][
-                                                                                                    :-1]
+                pred_class = classed_name[np.argmax(results_tmp[i])] if classed_name[np.argmax(results_tmp[i])][-1:] != "\n" else classed_name[ np.argmax(results_tmp[i])][:-1]
                 if isinstance(np.argmax(results_tmp[i]), np.int64):
                     pred_label = int(np.argmax(results_tmp[i]))
                 if isinstance(results_tmp[i][np.argmax(results_tmp[i])], np.float32):
                     pred_score = float(results_tmp[i][np.argmax(results_tmp[i])])
-                tmp_result = {
+                    tmp_result = {
                     'pred_label': pred_label,  # np.argmax(result[i]),
                     'pred_score': pred_score,  # result[i][np.argmax(result[i])],
                     'pred_class': pred_class,
-                }
-                results.append(tmp_result)
+                    }
+                    results.append(tmp_result)
+
+            for i, img in enumerate(os.listdir(image)):
+                self.infer_model.show_result(os.path.join(image,img), results[i], out_file=os.path.join(save_fold, os.path.split(img)[1]))
+
             # model.show_result(image, result, show=show, out_file=os.path.join(save_fold, os.path.split(image)[1]))
             chinese_res = []
             for i in range(len(results)):
@@ -474,3 +554,23 @@ class MMClassification:
             for name in f:
                 classes.append(name.strip('\n'))
         return classes
+
+    def batch_infer(self, model, data_loader):
+        results_tmp = []
+        model.eval()
+        results = []
+        dataset = data_loader.dataset
+        prog_bar = mmcv.ProgressBar(len(dataset))
+        for i, data in enumerate(data_loader):
+            # data = data.to(device)
+            data = scatter(data, [self.device])[0]
+            with torch.no_grad():
+                result = model(return_loss=False, **data)
+
+            batch_size = len(result)
+            results_tmp.extend(result)
+
+            batch_size = data['img'].size(0)
+            for _ in range(batch_size):
+                prog_bar.update()
+        return results_tmp
