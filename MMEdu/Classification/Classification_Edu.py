@@ -450,6 +450,7 @@ class MMClassification:
                     round_up=True)
 
             else: # 文件夹 Lenet
+
                 dirname = [x.strip() for x in image.split('/') if x.strip() != ''][-1]
                 import shutil
                 if os.path.exists(os.path.join(dataset_path, 'cache')):
@@ -488,11 +489,11 @@ class MMClassification:
                     'pred_label': pred_label,  # np.argmax(result[i]),
                     'pred_score': pred_score,  # result[i][np.argmax(result[i])],
                     'pred_class': pred_class,
-                    }
-                    results.append(tmp_result)
+
 
             for i, img in enumerate(os.listdir(image)):
                 self.infer_model.show_result(os.path.join(image,img), results[i], out_file=os.path.join(save_fold, os.path.split(img)[1]))
+
 
             # model.show_result(image, result, show=show, out_file=os.path.join(save_fold, os.path.split(image)[1]))
             chinese_res = []
