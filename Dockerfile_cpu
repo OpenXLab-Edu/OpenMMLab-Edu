@@ -1,0 +1,9 @@
+FROM pjlab-innolab:base
+USER openinnolab
+RUN conda install pytorch==1.8.1 torchvision==0.9.1 torchaudio==0.8.1 cpuonly -c pytorch -n ssenv && \
+    /usr/local/envs/ssenv/bin/python -m pip install mmedu==0.0.7 && \
+    /usr/local/envs/ssenv/bin/mim install mmcv-full==1.4.5 && \
+    /usr/local/envs/ssenv/bin/mim install mmcls && \
+    /usr/local/envs/ssenv/bin/mim install mmdet==2.20.0 && \
+    mamba install ffmpeg=5.0.1  -c conda-forge -n ssenv -y && conda clean --all -y 
+#docker build -f docker/base/cpu_anaconda_pytorch_engine/Dockerfile -t registry.sensetime.com/sensestudy/openinnolab/pjlab-innolab:pytorch-cpu-base .

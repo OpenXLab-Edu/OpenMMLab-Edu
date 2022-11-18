@@ -2,14 +2,14 @@ import os
 import mmcv
 import time
 import torch
+import numpy as np
+import cv2
+import PIL
 from mmcv import Config
 from mmcls.apis import inference_model, init_model, show_result_pyplot, train_model, set_random_seed, single_gpu_test
 from mmcls.models import build_classifier
 from mmcls.datasets import  build_dataloader,build_dataset
 from mmcv.runner import load_checkpoint
-from tqdm import tqdm
-import numpy as np
-import cv2
 from mmcv.parallel import collate, scatter
 from mmcls.datasets.pipelines import Compose
 
@@ -226,7 +226,6 @@ class MMClassification:
         # if not checkpoint:
             # checkpoint = os.path.join(self.cwd, 'checkpoints/cls_model/hand_gray/latest.pth')
         self.device = device
-        print("========= begin inference ==========")
         classed_name = self.get_class(class_path)
         self.class_path = class_path
         self.num_classes = len(classed_name)
@@ -275,10 +274,10 @@ class MMClassification:
         # if not isinstance(image,str): # 传入图片格式，仅支持str图片路径
         #     info = "Error Code: -304. No such argument:"+ image+"which is" +type(image)
         #     raise Exception(info)
-        if isinstance(image,str) and not os.path.exists(image):
+        if type(image) != PIL.PngImagePlugin.PngImageFile and type(image) != np.ndarray and not os.path.exists(image):
             info = "Error Code: -103. No such file:"+ image
             raise Exception(info)
-        if os.path.isfile(image) and image.split(".")[-1].lower() not in ["png","jpg","jpeg","bmp"]:
+        if type(image) != PIL.PngImagePlugin.PngImageFile and os.path.isfile(image) and image.split(".")[-1].lower() not in ["png","jpg","jpeg","bmp"]:
             info = "Error Code: -203. File type error:"+ image
             raise Exception(info)
 
@@ -296,7 +295,6 @@ class MMClassification:
         if len(kwargs) != 0:
             info = "Error Code: -501. No such parameter: " + next(iter(kwargs.keys()))
             raise Exception(info)
-        import PIL
         # img_array = mmcv.imread(image, flag='color')
         try:
             self.infer_model
@@ -367,9 +365,7 @@ class MMClassification:
                 img_array = mmcv.imread(image, flag='color')
                 result = inference_model(self.infer_model, img_array)  # 此处的model和外面的无关,纯局部变量
             else: # 单张图片 Lenet
-                print("+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++")
                 imagename = image.split("/")[-1]
-
                 # build the dataloader
                 f = open("test.txt", 'w')
                 f.write(imagename)
@@ -395,10 +391,7 @@ class MMClassification:
                     workers_per_gpu=self.cfg.data.workers_per_gpu,
                     shuffle=False,
                     round_up=True)
-                print(data_loader)
-
                 result = self.batch_infer(self.infer_model, data_loader)
-                #—————————————————————————————————————————————————————————————————————————
                 os.remove("test.txt")
                 shutil.rmtree("cache")
                 ff = classed_name
@@ -420,7 +413,6 @@ class MMClassification:
             tmp['标签'] = result['pred_label']
             tmp['置信度'] = result['pred_score']
             tmp['预测结果'] = result['pred_class']
-            print("tmp", tmp)
             # img.append(tmp)
             chinese_res.append(tmp)
             # print(chinese_res)
@@ -462,7 +454,6 @@ class MMClassification:
                 self.cfg.data.test.data_prefix = os.path.join(dataset_path, 'cache')
                 self.cfg.data.test.classes = os.path.abspath(self.class_path)
                 dataset = build_dataset(self.cfg.data.test)
-                print(dataset)
                 # the extra round_up data will be removed during gpu/cpu collect
                 data_loader = build_dataloader(
                     dataset,
@@ -471,7 +462,6 @@ class MMClassification:
                     shuffle=False,
                     round_up=True)
 
-            # ————————————————————————————————single_gpu_test————————————————
             results_tmp = self.batch_infer(self.infer_model, data_loader)
 
             if os.path.exists(os.path.join(dataset_path, 'cache')):
@@ -560,10 +550,13 @@ class MMClassification:
         model.eval()
         results = []
         dataset = data_loader.dataset
-        prog_bar = mmcv.ProgressBar(len(dataset))
+        prog_bar = mmcv.ProgressBar(task_num=len(dataset),start=False)
+        from mmcv.utils.timer import Timer
+        prog_bar.file.flush()
+        prog_bar.timer = Timer()
         for i, data in enumerate(data_loader):
             # data = data.to(device)
-            data = scatter(data, [self.device])[0]
+            if self.device == "cuda": data = scatter(data, [self.device])[0]
             with torch.no_grad():
                 result = model(return_loss=False, **data)
 
