@@ -226,6 +226,7 @@ class MMClassification:
         # if not checkpoint:
             # checkpoint = os.path.join(self.cwd, 'checkpoints/cls_model/hand_gray/latest.pth')
         self.device = device
+
         classed_name = self.get_class(class_path)
         self.class_path = class_path
         self.num_classes = len(classed_name)
@@ -274,10 +275,12 @@ class MMClassification:
         # if not isinstance(image,str): # 传入图片格式，仅支持str图片路径
         #     info = "Error Code: -304. No such argument:"+ image+"which is" +type(image)
         #     raise Exception(info)
+
         if type(image) != PIL.PngImagePlugin.PngImageFile and type(image) != np.ndarray and not os.path.exists(image):
             info = "Error Code: -103. No such file:"+ image
             raise Exception(info)
         if type(image) != PIL.PngImagePlugin.PngImageFile and os.path.isfile(image) and image.split(".")[-1].lower() not in ["png","jpg","jpeg","bmp"]:
+
             info = "Error Code: -203. File type error:"+ image
             raise Exception(info)
 
@@ -295,6 +298,7 @@ class MMClassification:
         if len(kwargs) != 0:
             info = "Error Code: -501. No such parameter: " + next(iter(kwargs.keys()))
             raise Exception(info)
+
         # img_array = mmcv.imread(image, flag='color')
         try:
             self.infer_model
@@ -391,7 +395,9 @@ class MMClassification:
                     workers_per_gpu=self.cfg.data.workers_per_gpu,
                     shuffle=False,
                     round_up=True)
+
                 result = self.batch_infer(self.infer_model, data_loader)
+
                 os.remove("test.txt")
                 shutil.rmtree("cache")
                 ff = classed_name
@@ -413,6 +419,7 @@ class MMClassification:
             tmp['标签'] = result['pred_label']
             tmp['置信度'] = result['pred_score']
             tmp['预测结果'] = result['pred_class']
+            print("tmp", tmp)
             # img.append(tmp)
             chinese_res.append(tmp)
             # print(chinese_res)
@@ -454,6 +461,7 @@ class MMClassification:
                 self.cfg.data.test.data_prefix = os.path.join(dataset_path, 'cache')
                 self.cfg.data.test.classes = os.path.abspath(self.class_path)
                 dataset = build_dataset(self.cfg.data.test)
+                print(dataset)
                 # the extra round_up data will be removed during gpu/cpu collect
                 data_loader = build_dataloader(
                     dataset,
@@ -483,6 +491,7 @@ class MMClassification:
 
             for i, img in enumerate(os.listdir(image)):
                 self.infer_model.show_result(os.path.join(image,img), results[i], out_file=os.path.join(save_fold, os.path.split(img)[1]))
+
 
             # model.show_result(image, result, show=show, out_file=os.path.join(save_fold, os.path.split(image)[1]))
             chinese_res = []
@@ -559,10 +568,7 @@ class MMClassification:
             if self.device == "cuda": data = scatter(data, [self.device])[0]
             with torch.no_grad():
                 result = model(return_loss=False, **data)
-
-            batch_size = len(result)
             results_tmp.extend(result)
-
             batch_size = data['img'].size(0)
             for _ in range(batch_size):
                 prog_bar.update()
