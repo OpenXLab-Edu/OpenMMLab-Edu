@@ -40,16 +40,9 @@ $ sudo systemctl start docker
 $ sudo docker run --rm hello-world
 
 ```
-## 2. Docker安装本地MMEdu
-<!-- 如果使用 docker import 会导致仓库没有取名 -->
-仓库名为xedu2.0
-```
 
-$ sudo docker load -i xedu2.0.tar
-
-```
-## 3. 使用MMEdu
-### 3.1 操作并管理Docker
+## 2. 使用MMEdu
+### 2.1 操作并管理Docker
 #### 查看镜像
 ```
 
@@ -64,7 +57,7 @@ $ sudo docker images
 <!-- sudo docker run -it {REPOSITORY:TAG|IMAGE ID}  -->
 ```
 
-# docker run -it {仓库名：标签|镜像id}
+# docker run -it {仓库名：标签|镜像id}, 以下实例均以xedu2.0为仓库名、latest为标签名
 
 $ sudo docker run -it -p 7777:8888 xedu2.0:latest
 
@@ -135,7 +128,7 @@ sudo docker rmi xedu2.0:latest
 ``` -->
 <!-- ![](2022-10-21-14-29-57.png) -->
 
-### 3.2 运行Demo
+### 2.2 运行Demo
 拷贝文件到docker内
 ```
 
