@@ -1,4 +1,8 @@
 # DockerFile使用教程
+## 如果需要安装docker服务，详细请参考docker/start_docker.md文件
+## 如果需要在docker内使用GPU相关功能，详细请参考docker/docker_with_gpu.md
+
+
 ## 1.从MMEdu官方构建Docker镜像
 ### 1.从GitHub或Gitee中拉取最新的MMEdu项目仓库
 ```
@@ -53,13 +57,48 @@ ENV #构建的时候设置环境变量
 git clone https://gitee.com/openxlab-edu/OpenMMLab-Edu.git
 ```
 
-### 2.下载速度太慢
+### 2.docker构建时相关包下载速度太慢
 ```
 # answer: 修改dockerfile中的run命令，换用清华源
 RUN pip install --no-cache-dir mmcv-full==1.4.6 -f https://download.openmmlab.com/mmcv/dist/cu101/torch1.8/index.html -i https://pypi.tuna.tsinghua.edu.cn/simple
 ```
 
-### 3.MMEdu Import Error
+### 3.docker换源
+```
+需要注册阿里云账号并在DockerFile中更改镜像地址为你在阿里云中的地址。
+详细内容请参考https://blog.csdn.net/rothchil/article/details/125622078?ops_request_misc=%257B%2522request%255Fid%2522%253A%2522166884841616800213065624%2522%252C%2522scm%2522%253A%252220140713.130102334..%2522%257D&request_id=166884841616800213065624&biz_id=0&utm_medium=distribute.pc_search_result.none-task-blog-2~all~top_click~default-2-125622078-null-null.142^v65^control,201^v3^control_2,213^v2^t3_esquery_v3&utm_term=docker换源&spm=1018.2226.3001.4187
+```
+
+### 4.Ubuntu apt install换源
+在命令行中输入如下命令
+```
+cp /etc/apt/sources.list /etc/apt/sources.list.bak
+sudovim /etc/apt/sources.list
+```
+在文本中加入如下内容
+```
+deb http://mirrors.ustc.edu.cn/ubuntu/ precise-updates main restricted
+deb-src http://mirrors.ustc.edu.cn/ubuntu/ precise-updates main restricted
+deb http://mirrors.ustc.edu.cn/ubuntu/ precise universe
+deb-src http://mirrors.ustc.edu.cn/ubuntu/ precise universe
+deb http://mirrors.ustc.edu.cn/ubuntu/ precise-updates universe
+deb-src http://mirrors.ustc.edu.cn/ubuntu/ precise-updates universe
+deb http://mirrors.ustc.edu.cn/ubuntu/ precise multiverse
+deb-src http://mirrors.ustc.edu.cn/ubuntu/ precise multiverse
+deb http://mirrors.ustc.edu.cn/ubuntu/ precise-updates multiverse
+deb-src http://mirrors.ustc.edu.cn/ubuntu/ precise-updates multiverse
+deb http://mirrors.ustc.edu.cn/ubuntu/ precise-backports main restricted universe multiverse
+deb-src http://mirrors.ustc.edu.cn/ubuntu/ precise-backports main restricted universe multiverse
+```
+更新后即可提速
+```
+sudo apt-get update
+sudo apt-get upgrade
+```
+
+
+
+### 5.MMEdu Import Error
 ```
 >>> import MMEdu
 No CUDA runtime is found, using CUDA_HOME='/usr/local/cuda'
@@ -92,3 +131,4 @@ ImportError: libcudart.so.10.1: cannot open shared object file: No such file or 
 # answer: 1.确认dockerfile使用的cuda、torc、mmcv版本符合硬件，如Nvidia-30x显卡无法使用cuda10.x
 # answer: 2.在docker环境内的命令行中输入sudo ldconfig /usr/local/cuda-10.2/lib64即可修复
 ```
+
