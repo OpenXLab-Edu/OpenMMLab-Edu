@@ -10,12 +10,15 @@ from mmcv.runner import load_checkpoint
 from tqdm import tqdm
 import warnings
 import torch
+import numpy as np
+import PIL
+import cv2
 
 warnings.filterwarnings("ignore")
 
 
 class MMDetection:
-    def sota():
+    def sota(self):
         pypath = os.path.abspath(__file__)
         father = os.path.dirname(pypath)
         models = os.path.join(father, 'models')
@@ -66,6 +69,7 @@ class MMDetection:
         self.num_classes = num_classes
         self.chinese_res = None
         self.is_sample = False
+        self.image_type = ""
 
     def train(self, random_seed=0, save_fold=None, distributed=False, validate=True,device='cpu',
               metric='bbox', save_best='bbox_mAP', optimizer="SGD", epochs=100, lr=0.001, weight_decay=0.001, Frozen_stages=1,
@@ -175,14 +179,34 @@ class MMDetection:
         self.infer_model.test_cfg.rcnn.nms.iou_threshold = 1 - rcnn_threshold
     
     def fast_inference(self, image,show=False, save_fold='det_result'):
-        img_array = mmcv.imread(image)
         try:
             self.infer_model
         except:
             print("请先使用load_checkpoint()方法加载权重！")
-            return 
+            return
+        #print("========= begin inference ==========")
+        classed_name = self.infer_model.CLASSES
+        self.num_classes = len(classed_name)
+
+        results = []
+        dataset_path = os.getcwd()
+        if not isinstance(image, str) and type(image) != np.ndarray:  # 以PIL读入图片
+            self.image_type = "pil"
+            image = np.array(image)
+
+        if type(image) == np.ndarray:
+            if self.cfg.data.test.pipeline[0]['type'] == 'LoadImageFromFile':
+                self.cfg.data.test.pipeline[0].type = 'LoadImageFromWebcam'
+
+            if self.image_type != "pil": self.image_type = "numpy"
+            print("{} image".format(self.image_type))
+            image = cv2.cvtColor(image, cv2.COLOR_RGB2BGR)
+            img_array = mmcv.imread(image, channel_order='rgb')
+            image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+        else:
+            img_array = mmcv.imread(image, channel_order='rgb')
         result = inference_detector(self.infer_model, img_array)  # 此处的model和外面的无关,纯局部变量
-        self.infer_model.show_result(image, result, show=show, out_file=os.path.join(save_fold,  os.path.split(image)[1]))
+        self.infer_model.show_result(image, result, show=show, out_file=os.path.join(save_fold, "{}img.jpg".format(self.image_type)))
         chinese_res = []
         for i in range(len(result)):
             for j in range(result[i].shape[0]):
@@ -195,7 +219,7 @@ class MMDetection:
                 chinese_res.append(tmp)
         # print(chinese_res)
         self.chinese_res = chinese_res
-        # print("========= finish inference ==========")
+        print("========= finish inference ==========")
         return result
 
     def inference(self, device='cpu',
@@ -207,7 +231,15 @@ class MMDetection:
                   class_path="../dataset/det/coco/classes.txt",
                   save_fold='det_result',
                   ):
-        if image == None:
+        if device not in ['cpu','cuda']:
+            info = "Error Code: -301. No such argument: "+ device
+            raise Exception(info)
+        is_cuda  = torch.cuda.is_available()
+        if device == 'cpu' and is_cuda:
+            print("You can use  'device=cuda' to accelerate !")
+        elif device == 'cuda' and not is_cuda:
+            raise Exception("Error Code: -301. Your device doesn't support cuda.")
+        if type(image)!=np.ndarray and image == None:
             self.is_sample = True
             sample_return = """
         [array([[ 26.547777  ,  81.55447   , 497.37015   , 414.4934    ,
@@ -217,74 +249,21 @@ class MMDetection:
             """
             return sample_return
         self.is_sample = False
-        print("========= begin inference ==========")
+        if isinstance(image, str) and not os.path.exists(image):
+            info = "Error Code: -103. No such file:"+ image
+            raise Exception(info)
+        if isinstance(image, str) and os.path.isfile(image) and image.split(".")[-1].lower() not in ["png","jpg","jpeg","bmp"]:
+            info = "Error Code: -203. File type error:"+ image
+            raise Exception(info)
 
-        if self.num_classes != -1:
-            self.cfg.model.roi_head.bbox_head.num_classes = self.num_classes
+        if checkpoint != None and checkpoint.split(".")[-1] != 'pth':
+            info = "Error Code: -202. Checkpoint file type error:"+ checkpoint
+            raise Exception(info)
 
-        if checkpoint:
-            # 加载数据集及配置文件的路径
-            # self.load_dataset(self.dataset_path)
-            # 修正检测的目标
-            self.cfg.classes = self.get_class(class_path)
-            self.cfg.data.train.classes = self.cfg.classes
-            self.cfg.data.test.classes = self.cfg.classes
-            self.cfg.data.val.classes = self.cfg.classes
-            self.cfg.model.roi_head.bbox_head.num_classes = len(
-                self.cfg.classes)
-            model = init_detector(self.cfg, checkpoint, device=device)
-            model.CLASSES = self.cfg.classes
-        else:
-            model = init_detector(self.cfg, self.checkpoint, device=device)
-        model.test_cfg.rpn.nms.iou_threshold = 1 - rpn_threshold
-        model.test_cfg.rcnn.nms.iou_threshold = 1 - rcnn_threshold
+        checkpoint = os.path.abspath(checkpoint) # pip修改2
+        self.load_checkpoint(device= device, checkpoint=os.path.abspath(checkpoint), class_path=class_path)
+        return self.fast_inference(image=image, show=show,save_fold=save_fold)
 
-        results = []
-        if (image[-1] != '/'):
-            img_array = mmcv.imread(image)
-            result = inference_detector(
-                model, img_array)  # 此处的model和外面的无关,纯局部变量
-            if show == True:
-                show_result_pyplot(model, image, result)
-            model.show_result(image, result, show=show, out_file=os.path.join(save_fold,  os.path.split(image)[1]))
-            chinese_res = []
-            for i in range(len(result)):
-                for j in range(result[i].shape[0]):
-                    tmp = {}
-                    tmp['类别标签'] = i
-                    tmp['置信度'] = result[i][j][4]
-                    tmp['坐标'] = {"x": int(result[i][j][0]), "y": int(
-                        result[i][j][1]), 'w': int(result[i][j][2]), 'h': int(result[i][j][3])}
-                    # img.append(tmp)
-                    chinese_res.append(tmp)
-            # print(chinese_res)
-            self.chinese_res = chinese_res
-            print("========= finish inference ==========")
-            return result
-        else:
-            img_dir = image
-            mmcv.mkdir_or_exist(os.path.abspath(save_fold))
-            chinese_results = []
-            for i, img in enumerate(tqdm(os.listdir(img_dir))):
-                result = inference_detector(
-                    model, img_dir + img)  # 此处的model和外面的无关,纯局部变量
-                model.show_result(img_dir + img, result,
-                                  out_file=os.path.join(save_fold, img))
-                chinese_res = []
-                for i in range(len(result)):
-                    for j in range(result[i].shape[0]):
-                        tmp = {}
-                        tmp['类别标签'] = i
-                        tmp['置信度'] = result[i][j][4]
-                        tmp['坐标'] = {"x": int(result[i][j][0]), "y": int(
-                            result[i][j][1]), 'w': int(result[i][j][2]), 'h': int(result[i][j][3])}
-                        # img.append(tmp)
-                        chinese_res.append(tmp)
-                chinese_results.append(chinese_res)
-                results.append(result)
-            self.chinese_res = chinese_results
-        print("========= finish inference ==========")
-        return results
 
     def load_dataset(self, path):
         self.dataset_path = path
