@@ -315,8 +315,19 @@ class MMDetection:
                              rpn_threshold=rpn_threshold, rcnn_threshold=rcnn_threshold)
         return self.fast_inference(image=image, show=show, save_fold=save_fold)
 
-    def load_dataset(self, path):
+    def load_dataset(self, path, **kwargs):
+        if len(kwargs) != 0:
+            info = "Error Code: -501. No such parameter: " + next(iter(kwargs.keys()))
+            raise Exception(info)
+
         self.dataset_path = path
+        if not isinstance(path, str):
+            info = "Error Code: -201. Dataset file type error, which should be <class 'str'> instead of " + type(
+                path) + "."
+            raise Exception(info)
+        if not os.path.exists(path):  # 数据集路径不存在
+            info = "Error Code: -101. No such dateset directory: " + path
+            raise Exception(info)
 
         # 数据集修正为coco格式
         self.cfg.data.train.img_prefix = os.path.join(self.dataset_path, 'images/train/')
