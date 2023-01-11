@@ -330,14 +330,14 @@ class MMDetection:
             raise Exception(info)
 
         # 数据集修正为coco格式
-        self.cfg.data.train.img_prefix = os.path.join(self.dataset_path, 'images/train/')
+        self.cfg.data.train.img_prefix = os.path.join(self.dataset_path, 'images/training_set/')
         self.cfg.data.train.ann_file = os.path.join(self.dataset_path, 'annotations/train.json')
 
-        self.cfg.data.val.img_prefix = os.path.join(self.dataset_path, 'images/test/')
+        self.cfg.data.val.img_prefix = os.path.join(self.dataset_path, 'images/val_set/')
         self.cfg.data.val.ann_file = os.path.join(self.dataset_path, 'annotations/valid.json')
 
-        self.cfg.data.test.img_prefix = os.path.join(self.dataset_path, 'images/test/')
-        self.cfg.data.test.ann_file = os.path.join(self.dataset_path, 'annotations/valid.json')
+        self.cfg.data.test.img_prefix = os.path.join(self.dataset_path, 'images/test_set/')
+        self.cfg.data.test.ann_file = os.path.join(self.dataset_path, 'annotations/test.json')
 
     def get_class(self, class_path):
         classes = []
