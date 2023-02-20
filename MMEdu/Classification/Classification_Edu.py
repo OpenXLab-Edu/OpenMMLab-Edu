@@ -84,7 +84,7 @@ class MMClassification:
 
     def train(self, random_seed=0, save_fold=None, distributed=False, validate=True, device="cpu",
               metric='accuracy', save_best='auto', optimizer="SGD", epochs=100, lr=0.01, weight_decay=0.001,
-              checkpoint=None,**kwargs):
+              checkpoint=None,batch_size=None,**kwargs):
         if len(kwargs) != 0:
             info = "Error Code: -501. No such parameter: " + next(iter(kwargs.keys()))
             raise Exception(info)
@@ -126,7 +126,8 @@ class MMClassification:
                 self.cfg.model.head.num_classes = self.num_classes
 
         self.load_dataset(self.dataset_path)
-
+        if  'val_set' not in os.listdir(self.dataset_path):
+            print("Unable to validate during training due to lack of validation set !")
         datasets = None
         try:
             datasets = [build_dataset(self.cfg.data.train)]
@@ -180,7 +181,8 @@ class MMClassification:
 
         self.cfg.seed = random_seed
         self.cfg.device = device
-
+        if batch_size is not None:
+            self.cfg.data.samples_per_gpu = batch_size
         train_model(
             model,
             datasets,
@@ -525,18 +527,96 @@ class MMClassification:
             std=[58.577, 57.310, 57.437],
             to_rgb=True
         )
+        tot = 0
+        for root, dirs, files in os.walk(path):
+            for file in files:
+                if "txt" not in file:
+                    impath = os.path.join(root, file)
+                    # print("impath", impath)
+                    if  "jpg"  in impath or "png" in impath:
+                        # print(impath)
+                        img = cv2.imread(impath)
+                        try:
+                            img.shape
+                        except AttributeError:
+                            info = "Error Code: -201. The image file {} is damaged.".format(impath)
+                            raise Exception(info)
+
+                        tot += 1
+        val_permit = True
+        if 'val.txt' not in os.listdir(path) and 'val_set' in os.listdir(path):
+            # print("生成val.txt")
+            val_permit, valtxt_path = self.generate_txt(path, "val")
+        # test_permit = True
+        # if 'test.txt' not in os.listdir(path) and 'test_set' in os.listdir(path):
+        #     print("生成test.txt")
+        #     test_permit, testtxt_path = self.generate_txt(path, "test")
+        class_permit = True
+        if 'classes.txt' not in os.listdir(path):
+            # print("生成classes.txt")
+            training_set = os.path.join(path, 'training_set')
+            content = sorted(os.listdir(training_set))
+            content = [i+"\n" for i in content]
+            try:
+                classestxt = open(os.path.join(path,"classes.txt"), mode='w')
+            except:
+                class_permit = False
+                dataset_txt = "dataset_txt"
+                if not os.path.exists(dataset_txt):
+                    os.mkdir(dataset_txt)
+                classtxt_path = os.path.join(dataset_txt,"classes.txt")
+                classestxt = open(classtxt_path, mode='w')
+
+            classestxt.writelines(content)
+            classestxt.close()
 
         self.cfg.data.train.data_prefix = os.path.join(self.dataset_path, 'training_set')
-        self.cfg.data.train.classes = os.path.join(self.dataset_path, 'classes.txt')
+        # self.cfg.data.train.classes = os.path.join(self.dataset_path, 'classes.txt')
 
         self.cfg.data.val.data_prefix = os.path.join(self.dataset_path, 'val_set')
-        self.cfg.data.val.ann_file = os.path.join(self.dataset_path, 'val.txt')
-        self.cfg.data.val.classes = os.path.join(self.dataset_path, 'classes.txt')
+        if val_permit:
+            self.cfg.data.val.ann_file = os.path.join(self.dataset_path, 'val.txt')
+        else:
+            self.cfg.data.val.ann_file = valtxt_path
+        # self.cfg.data.val.classes = os.path.join(self.dataset_path, 'classes.txt')
 
         self.cfg.data.test.data_prefix = os.path.join(self.dataset_path, 'test_set')
+        # if test_permit:
         self.cfg.data.test.ann_file = os.path.join(self.dataset_path, 'test.txt')
-        self.cfg.data.test.classes = os.path.join(self.dataset_path, 'classes.txt')
+        # else:
+        #     self.cfg.data.test.ann_file = testtxt_path
+        # self.cfg.data.test.classes = os.path.join(self.dataset_path, 'classes.txt')
+        if class_permit:
+            self.cfg.data.train.classes = os.path.join(self.dataset_path, 'classes.txt')
+            self.cfg.data.val.classes = os.path.join(self.dataset_path, 'classes.txt')
+            self.cfg.data.test.classes = os.path.join(self.dataset_path, 'classes.txt')
+        else:
+            self.cfg.data.train.classes = classtxt_path
+            self.cfg.data.val.classes = classtxt_path
+            self.cfg.data.test.classes = classtxt_path
 
+    def generate_txt(self, path, type):
+        permit = True
+        val_set = os.path.join(path, type+'_set')
+        txt_path = os.path.join(path,type+".txt")
+        try: 
+            valtxt = open(txt_path, mode='w')
+        except:
+            permit = False
+            dataset_txt = "dataset_txt"
+            if not os.path.exists(dataset_txt):
+                os.mkdir(dataset_txt)
+            txt_path = os.path.join(dataset_txt,type+".txt")
+            valtxt = open(txt_path, mode='w')
+
+        content = []
+        for label, i in enumerate(sorted(os.listdir(val_set))):
+            for j in sorted(os.listdir(os.path.join(val_set,i))):
+                # print(os.path.join(i,j), label)
+                content.append("{} {}\n".format(os.path.join(i,j), label))
+        valtxt.writelines(content)
+        valtxt.close()
+        return permit, txt_path
 
     def get_class(self, class_path):
         classes = []
@@ -567,3 +647,215 @@ class MMClassification:
             for _ in range(batch_size):
                 prog_bar.update()
         return results_tmp
+    
+    def convert(self, checkpoint=None, backend="ONNX", out_file="convert_model.onnx",class_path=None):
+        ashape = [224,224]
+        if len(ashape) == 1:
+            input_shape = (1, 3, ashape[0], ashape[0])
+        elif len(ashape) == 2:
+            input_shape = (
+                1,
+                3,
+            ) + tuple(ashape)
+        else:
+            raise ValueError('invalid input shape')
+        self.cfg.model.pretrained = None
+
+        self.cfg.model.head.num_classes = self.num_classes
+        # build the model and load checkpoint
+        classifier = build_classifier(self.cfg.model)
+
+        if checkpoint:
+            load_checkpoint(classifier, checkpoint, map_location='cpu')
+        else:
+            load_checkpoint(classifier, self.checkpoint, map_location='cpu')
+        
+        if backend == "ONNX" or backend == 'onnx':
+            pytorch2onnx(
+                classifier, # 模型，此处是分类器
+                input_shape, 
+                output_file=out_file,
+                do_simplify = False,
+                verify =False)
+        else:
+            print("Sorry, we only suport ONNX up to now.")
+        with open(out_file.replace(".onnx", ".py"), "w+") as f:
+            tp = str(self.cfg.test_pipeline).replace("},","},\n\t")
+            if class_path != None:
+                classes_list = self.get_class(class_path)
+
+            gen0 = """
+import onnxruntime as rt
+import BaseData
+import numpy as np
+import cv2
+
+tag = 
+"""
+            gen1 = """
+sess = rt.InferenceSession('
+"""
+            gen2 = """', None)
+input_name = sess.get_inputs()[0].name
+out_name = sess.get_outputs()[0].name
+
+cap = cv2.VideoCapture(0)
+ret_flag,Vshow = cap.read()
+dt = BaseData.ImageData(Vshow, backbone="
+"""
+
+            gen3 = """")
+input_data = dt.to_tensor()
+
+pred_onx = sess.run([out_name], {input_name: input_data})
+ort_output = pred_onx[0]
+idx = np.argmax(ort_output, axis=1)[0]
+print('result:' + tag[idx])
+""" 
+            if class_path != None:
+                gen = gen0.strip("\n") + str(classes_list)+ "\n" + gen1.strip("\n")+out_file+ gen2.strip("\n") + str(self.backbone) + gen3
+            else:
+                gen = gen0.strip("tag = \n") + "\n\n" + gen1.strip("\n")+out_file+ gen2.strip("\n") + str(self.backbone) + gen3.replace("tag[idx]", "idx")
+            f.write(gen)
+    
+# 模型部署
+def _demo_mm_inputs(input_shape, num_classes):
+    """Create a superset of inputs needed to run test or train batches.
+    Args:
+        input_shape (tuple):
+            input batch dimensions
+        num_classes (int):
+            number of semantic classes
+    """
+    (N, C, H, W) = input_shape
+    rng = np.random.RandomState(0)
+    imgs = rng.rand(*input_shape)
+    gt_labels = rng.randint(
+        low=0, high=num_classes, size=(N, 1)).astype(np.uint8)
+    mm_inputs = {
+        'imgs': torch.FloatTensor(imgs).requires_grad_(True),
+        'gt_labels': torch.LongTensor(gt_labels),
+    }
+    return mm_inputs
+
+def pytorch2onnx(model,
+                input_shape,
+                opset_version=11,
+                dynamic_export=False,
+                show=False,
+                output_file='tmp.onnx',
+                do_simplify=False,
+                verify=False):
+    """Export Pytorch model to ONNX model and verify the outputs are same
+    between Pytorch and ONNX.
+    Args:
+        model (nn.Module): Pytorch model we want to export.
+        input_shape (tuple): Use this input shape to construct
+            the corresponding dummy input and execute the model.
+        opset_version (int): The onnx op version. Default: 11.
+        show (bool): Whether print the computation graph. Default: False.
+        output_file (string): The path to where we store the output ONNX model.
+            Default: `tmp.onnx`.
+        verify (bool): Whether compare the outputs between Pytorch and ONNX.
+            Default: False.
+    """
+    from functools import partial
+    import onnxruntime as rt
+    from mmcv.onnx import register_extra_symbolics
+    model.cpu().eval()
+
+    if hasattr(model.head, 'num_classes'):
+        num_classes = model.head.num_classes
+    # Some backbones use `num_classes=-1` to disable top classifier.
+    elif getattr(model.backbone, 'num_classes', -1) > 0:
+        num_classes = model.backbone.num_classes
+    else:
+        raise AttributeError('Cannot find "num_classes" in both head and '
+                            'backbone, please check the config file.')
+    mm_inputs = _demo_mm_inputs(input_shape, num_classes)
+
+    imgs = mm_inputs.pop('imgs')
+    img_list = [img[None, :] for img in imgs]
+
+    # replace original forward function
+    origin_forward = model.forward
+    model.forward = partial(model.forward, img_metas={}, return_loss=False)
+    register_extra_symbolics(opset_version)
+
+    # support dynamic shape export
+    if dynamic_export:
+        dynamic_axes = {
+            'input': {
+                0: 'batch',
+                2: 'width',
+                3: 'height'
+            },
+            'probs': {
+                0: 'batch'
+            }
+        }
+    else:
+        dynamic_axes = {}
+
+    with torch.no_grad():
+        torch.onnx.export(
+            model, (img_list, ),
+            output_file,
+            input_names=['input'],
+            output_names=['probs'],
+            export_params=True,
+            keep_initializers_as_inputs=True,
+            dynamic_axes=dynamic_axes,
+            verbose=show,
+            opset_version=opset_version)
+        print(f'Successfully exported ONNX model: {output_file}')
+    model.forward = origin_forward
+
+    if do_simplify:
+        import onnx
+        import onnxsim
+        from mmcv import digit_version
+
+        min_required_version = '0.4.0'
+        assert digit_version(onnxsim.__version__) >= digit_version(
+            min_required_version
+        ), f'Requires to install onnxsim>={min_required_version}'
+
+        model_opt, check_ok = onnxsim.simplify(output_file)
+        if check_ok:
+            onnx.save(model_opt, output_file)
+            print(f'Successfully simplified ONNX model: {output_file}')
+        else:
+            print('Failed to simplify ONNX model.')
+    if verify:
+        # check by onnx
+        import onnx
+        onnx_model = onnx.load(output_file)
+        onnx.checker.check_model(onnx_model)
+
+        # test the dynamic model
+        if dynamic_export:
+            dynamic_test_inputs = _demo_mm_inputs(
+                (input_shape[0], input_shape[1], input_shape[2] * 2,
+                input_shape[3] * 2), model.head.num_classes)
+            imgs = dynamic_test_inputs.pop('imgs')
+            img_list = [img[None, :] for img in imgs]
+
+        # check the numerical value
+        # get pytorch output
+        pytorch_result = model(img_list, img_metas={}, return_loss=False)[0]
+
+        # get onnx output
+        input_all = [node.name for node in onnx_model.graph.input]
+        input_initializer = [
+            node.name for node in onnx_model.graph.initializer
+        ]
+        net_feed_input = list(set(input_all) - set(input_initializer))
+        assert (len(net_feed_input) == 1)
+        sess = rt.InferenceSession(output_file)
+        onnx_result = sess.run(
+            None, {net_feed_input[0]: img_list[0].detach().numpy()})[0]
+        if not np.allclose(pytorch_result, onnx_result):
+            raise ValueError(
+                'The outputs are different between Pytorch and ONNX')
+        print('The outputs are same between Pytorch and ONNX')                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  
