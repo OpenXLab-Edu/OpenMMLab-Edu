@@ -173,7 +173,7 @@ class MMDetection:
             print(self.chinese_res)
         return self.chinese_res
 
-    def load_checkpoint(self, checkpoint=None, class_path="../dataset/det/coco/classes.txt", device='cpu',
+    def load_checkpoint(self, checkpoint=None, device='cpu',
                         rpn_threshold=0.7, rcnn_threshold=0.7):
         print("========= begin inference ==========")
         if self.num_classes != -1 and self.backbone not in ["Yolov3", "SSD_Lite"]:
@@ -183,7 +183,8 @@ class MMDetection:
             # 加载数据集及配置文件的路径
             # self.load_dataset(self.dataset_path)
             # 修正检测的目标
-            self.cfg.classes = self.get_class(class_path)
+            # self.cfg.classes = self.get_class(class_path)
+            self.cfg.classes = torch.load(checkpoint)['meta']['CLASSES']
             self.cfg.data.train.classes = self.cfg.classes
             self.cfg.data.test.classes = self.cfg.classes
             self.cfg.data.val.classes = self.cfg.classes
@@ -230,7 +231,6 @@ class MMDetection:
                   show=True,
                   rpn_threshold=0.7,
                   rcnn_threshold=0.7,
-                  class_path="../dataset/det/coco/classes.txt",
                   save_fold='det_result',
                   ):
         # self.cfg.classes = self.get_class(class_path)
@@ -263,8 +263,9 @@ class MMDetection:
             # 加载数据集及配置文件的路径
             # self.load_dataset(self.dataset_path)
             # 修正检测的目标
-            self.cfg.classes = self.get_class(class_path)
-            self.num_classes = len(self.get_class(class_path))
+            self.cfg.classes = torch.load(checkpoint)['meta']['CLASSES']
+
+            self.num_classes = len(self.cfg.classes)
             if self.num_classes != -1:
                 if "RCNN" not in self.backbone: # 单阶段
                     self.cfg.model.bbox_head.num_classes =self.num_classes
@@ -374,7 +375,7 @@ class MMDetection:
                     classes = classes + (cat['name'],)
         return classes
 
-    def convert(self, checkpoint=None, backend="ONNX", out_file="convert_model.onnx",class_path=None,device='cpu'):
+    def convert(self, checkpoint=None, backend="ONNX", out_file="convert_model.onnx",device='cpu'):
         import os.path as osp
         from mmdet.core.export import build_model_from_cfg
 
@@ -402,8 +403,8 @@ class MMDetection:
             # 加载数据集及配置文件的路径
             # self.load_dataset(self.dataset_path)
             # 修正检测的目标
-            self.cfg.classes = self.get_class(class_path)
-            self.num_classes = len(self.get_class(class_path))
+            self.cfg.classes = torch.load(checkpoint)['meta']['CLASSES']
+            self.num_classes = len(self.cfg.classes)
             if self.num_classes != -1:
                 if "RCNN" not in self.backbone: # 单阶段
                     self.cfg.model.bbox_head.num_classes =self.num_classes
@@ -445,8 +446,9 @@ class MMDetection:
             print("Sorry, we only suport ONNX up to now.")
         with open(out_file.replace(".onnx", ".py"), "w+") as f:
             tp = str(self.cfg.test_pipeline).replace("},","},\n\t")
-            if class_path != None:
-                classes_list = self.get_class(class_path)
+            # if class_path != None:
+            #     classes_list = self.get_class(class_path)
+            classes_list = torch.load(checkpoint)['meta']['CLASSES']
 
             gen0 = """
 import onnxruntime as rt
@@ -498,10 +500,10 @@ for box in zip(boxes[0]):
 cv2.imwrite("result.jpg", image)
 """ 
             ashape = self.cfg.test_pipeline[1].img_scale
-            if class_path != None:
-                gen = gen0.strip("\n") + '\n' + gen_sz.replace('sz_h',str(ashape[0])).replace('sz_w',str(ashape[1])).strip('\n') + str(classes_list)+ "\n" + gen1.strip("\n") + out_file + gen2.strip("\n") + str(self.backbone) + gen3
-            else:
-                gen = gen0.strip("tag = \n") + "\n\n" + gen1.strip("\n")+out_file+ gen2.strip("\n") + str(self.backbone) + gen3.replace("tag[labels[idx]]", "labels[idx]")
+            # if class_path != None:
+            gen = gen0.strip("\n") + '\n' + gen_sz.replace('sz_h',str(ashape[0])).replace('sz_w',str(ashape[1])).strip('\n') + str(classes_list)+ "\n" + gen1.strip("\n") + out_file + gen2.strip("\n") + str(self.backbone) + gen3
+            # else:
+            #     gen = gen0.strip("tag = \n") + "\n\n" + gen1.strip("\n")+out_file+ gen2.strip("\n") + str(self.backbone) + gen3.replace("tag[labels[idx]]", "labels[idx]")
             f.write(gen)
 
 
