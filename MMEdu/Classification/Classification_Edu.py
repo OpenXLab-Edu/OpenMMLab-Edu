@@ -649,43 +649,67 @@ class MMClassification:
         return results_tmp
     
     def convert(self, checkpoint=None, backend="ONNX", out_file="convert_model.onnx"):
-        ashape = [224,224]
-        if len(ashape) == 1:
-            input_shape = (1, 3, ashape[0], ashape[0])
-        elif len(ashape) == 2:
-            input_shape = (
-                1,
-                3,
-            ) + tuple(ashape)
-        else:
-            raise ValueError('invalid input shape')
-        self.cfg.model.pretrained = None
+        if not (backend == "ONNX" or backend == 'onnx'):
+            print("Sorry, we only suport ONNX up to now.")
+            return 
+        state_dict = torch.load(checkpoint, map_location=torch.device('cpu'))
+        classes_list = state_dict['meta']['CLASSES']
+        self.num_classes = len(classes_list)
+        if self.backbone == 'LeNet':
+            from mmcls.models.backbones import LeNet5
+            from collections import OrderedDict
+            model = LeNet5(num_classes=self.num_classes)
+            
+            class LeNet5_SoftMax(LeNet5):
+                def forward(self, x):
+                    x = self.features(x)
+                    if self.num_classes > 0:
+                        x = self.classifier(x.squeeze())
+                        x = torch.softmax(x, dim=0)
+                    return (x, )
 
-        self.cfg.model.head.num_classes = self.num_classes
-        # build the model and load checkpoint
-        classifier = build_classifier(self.cfg.model)
-
-        if checkpoint:
-            load_checkpoint(classifier, checkpoint, map_location='cpu')
+            model = LeNet5_SoftMax(num_classes=self.num_classes)    
+            new_state_dict = OrderedDict()
+            for key in state_dict['state_dict']:
+                new_state_dict[key[9:]] = state_dict['state_dict'][key]
+            model.load_state_dict(new_state_dict)
+            dummy_input = torch.randn(1, 1, 32, 32)
+            try:
+                torch.onnx.export(model, dummy_input, out_file)
+                print(f'Successfully exported ONNX model: {out_file}')
+            except:
+                print('Please use the checkpoint train by MMEdu')
         else:
-            load_checkpoint(classifier, self.checkpoint, map_location='cpu')
-        
-        if backend == "ONNX" or backend == 'onnx':
+            ashape = [224,224]
+            if len(ashape) == 1:
+                input_shape = (1, 3, ashape[0], ashape[0])
+            elif len(ashape) == 2:
+                input_shape = (
+                    1,
+                    3,
+                ) + tuple(ashape)
+            else:
+                raise ValueError('invalid input shape')
+            self.cfg.model.pretrained = None
+
+            self.cfg.model.head.num_classes = self.num_classes
+            # build the model and load checkpoint
+            classifier = build_classifier(self.cfg.model)
+
+            if checkpoint:
+                load_checkpoint(classifier, checkpoint, map_location='cpu')
+            else:
+                load_checkpoint(classifier, self.checkpoint, map_location='cpu')
+
             pytorch2onnx(
                 classifier, # 模型，此处是分类器
                 input_shape, 
                 output_file=out_file,
                 do_simplify = False,
                 verify =False)
-        else:
-            print("Sorry, we only suport ONNX up to now.")
-        with open(out_file.replace(".onnx", ".py"), "w+") as f:
-            tp = str(self.cfg.test_pipeline).replace("},","},\n\t")
-            # if class_path != None:
-                # classes_list = self.get_class(class_path)
-            classes_list = torch.load(checkpoint)['meta']['CLASSES']
 
-        
+        with open(out_file.replace(".onnx", ".py"), "w+") as f:
+
             gen0 = """
 import onnxruntime as rt
 import BaseData
