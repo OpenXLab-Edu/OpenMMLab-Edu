@@ -184,7 +184,7 @@ class MMDetection:
             # self.load_dataset(self.dataset_path)
             # 修正检测的目标
             # self.cfg.classes = self.get_class(class_path)
-            self.cfg.classes = torch.load(checkpoint)['meta']['CLASSES']
+            self.cfg.classes = torch.load(checkpoint, map_location=torch.device('cpu'))['meta']['CLASSES']
             self.cfg.data.train.classes = self.cfg.classes
             self.cfg.data.test.classes = self.cfg.classes
             self.cfg.data.val.classes = self.cfg.classes
@@ -263,7 +263,7 @@ class MMDetection:
             # 加载数据集及配置文件的路径
             # self.load_dataset(self.dataset_path)
             # 修正检测的目标
-            self.cfg.classes = torch.load(checkpoint)['meta']['CLASSES']
+            self.cfg.classes = torch.load(checkpoint, map_location=torch.device('cpu'))['meta']['CLASSES']
 
             self.num_classes = len(self.cfg.classes)
             if self.num_classes != -1:
