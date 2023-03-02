@@ -403,7 +403,7 @@ class MMDetection:
             # 加载数据集及配置文件的路径
             # self.load_dataset(self.dataset_path)
             # 修正检测的目标
-            self.cfg.classes = torch.load(checkpoint)['meta']['CLASSES']
+            self.cfg.classes = torch.load(checkpoint, map_location=torch.device('cpu'))['meta']['CLASSES']
             self.num_classes = len(self.cfg.classes)
             if self.num_classes != -1:
                 if "RCNN" not in self.backbone: # 单阶段
@@ -448,7 +448,7 @@ class MMDetection:
             tp = str(self.cfg.test_pipeline).replace("},","},\n\t")
             # if class_path != None:
             #     classes_list = self.get_class(class_path)
-            classes_list = torch.load(checkpoint)['meta']['CLASSES']
+            classes_list = torch.load(checkpoint, map_location=torch.device('cpu'))['meta']['CLASSES']
 
             gen0 = """
 import onnxruntime as rt
