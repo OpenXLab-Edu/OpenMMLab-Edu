@@ -183,6 +183,7 @@ class MMClassification:
         self.cfg.device = device
         if batch_size is not None:
             self.cfg.data.samples_per_gpu = batch_size
+
         train_model(
             model,
             datasets,
@@ -207,7 +208,6 @@ class MMClassification:
 
     def load_checkpoint(self,
                   checkpoint=None,
-                  class_path="../dataset/classes/cls_classes.txt",
                   device='cpu',
                   **kwargs,
                   ):
@@ -228,8 +228,9 @@ class MMClassification:
         # if not checkpoint:
             # checkpoint = os.path.join(self.cwd, 'checkpoints/cls_model/hand_gray/latest.pth')
         self.device = device
-        classed_name = self.get_class(class_path)
-        self.class_path = class_path
+        classed_name = torch.load(checkpoint)['meta']['CLASSES']
+        # classed_name = self.get_class(class_path)
+        # self.class_path = class_path
         self.num_classes = len(classed_name)
         if self.num_classes != -1:
             if 'num_classes' in self.cfg.model.backbone.keys():
@@ -250,7 +251,6 @@ class MMClassification:
         checkpoint=None,
         image=None,
         show=True,
-        class_path="../dataset/classes/cls_classes.txt",
         save_fold='cls_result',
         **kwargs,
         ):
@@ -290,7 +290,7 @@ class MMClassification:
             checkpoint = os.path.join(self.cwd, 'checkpoints/cls_model/hand_gray/latest.pth')
 
         checkpoint = os.path.abspath(checkpoint) # pip修改2
-        self.load_checkpoint(device= device, checkpoint=os.path.abspath(checkpoint), class_path=class_path)
+        self.load_checkpoint(device= device, checkpoint=os.path.abspath(checkpoint))
         return self.fast_inference(image=image, show=show,save_fold=save_fold, **kwargs)
 
     def fast_inference(self, image, show=False, save_fold='cls_result',**kwargs):
@@ -648,7 +648,7 @@ class MMClassification:
                 prog_bar.update()
         return results_tmp
     
-    def convert(self, checkpoint=None, backend="ONNX", out_file="convert_model.onnx",class_path=None):
+    def convert(self, checkpoint=None, backend="ONNX", out_file="convert_model.onnx"):
         ashape = [224,224]
         if len(ashape) == 1:
             input_shape = (1, 3, ashape[0], ashape[0])
@@ -681,9 +681,11 @@ class MMClassification:
             print("Sorry, we only suport ONNX up to now.")
         with open(out_file.replace(".onnx", ".py"), "w+") as f:
             tp = str(self.cfg.test_pipeline).replace("},","},\n\t")
-            if class_path != None:
-                classes_list = self.get_class(class_path)
+            # if class_path != None:
+                # classes_list = self.get_class(class_path)
+            classes_list = torch.load(checkpoint)['meta']['CLASSES']
 
+        
             gen0 = """
 import onnxruntime as rt
 import BaseData
@@ -712,10 +714,10 @@ ort_output = pred_onx[0]
 idx = np.argmax(ort_output, axis=1)[0]
 print('result:' + tag[idx])
 """ 
-            if class_path != None:
-                gen = gen0.strip("\n") + str(classes_list)+ "\n" + gen1.strip("\n")+out_file+ gen2.strip("\n") + str(self.backbone) + gen3
-            else:
-                gen = gen0.strip("tag = \n") + "\n\n" + gen1.strip("\n")+out_file+ gen2.strip("\n") + str(self.backbone) + gen3.replace("tag[idx]", "idx")
+            # if class_path != None:
+            gen = gen0.strip("\n") + str(classes_list)+ "\n" + gen1.strip("\n")+out_file+ gen2.strip("\n") + str(self.backbone) + gen3
+            # else:
+            #     gen = gen0.strip("tag = \n") + "\n\n" + gen1.strip("\n")+out_file+ gen2.strip("\n") + str(self.backbone) + gen3.replace("tag[idx]", "idx")
             f.write(gen)
     
 # 模型部署
