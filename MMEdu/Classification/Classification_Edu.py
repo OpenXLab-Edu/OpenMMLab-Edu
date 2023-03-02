@@ -383,7 +383,7 @@ class MMClassification:
                 shutil.copyfile(image, os.path.join("cache", "no.png"))
                 self.cfg.data.test.data_prefix = os.path.join(dataset_path, 'cache')
                 self.cfg.data.test.ann_file = os.path.join(dataset_path, 'test.txt')
-                self.cfg.data.test.classes = os.path.abspath(self.class_path)
+                # self.cfg.data.test.classes = os.path.abspath(self.class_path)
 
                 dataset = build_dataset(self.cfg.data.test)
                 # the extra round_up data will be removed during gpu/cpu collect
@@ -431,7 +431,7 @@ class MMClassification:
                 f.close()
                 self.cfg.data.test.data_prefix = image
                 self.cfg.data.test.ann_file = os.path.join(dataset_path, 'test.txt')
-                self.cfg.data.test.classes = os.path.abspath(self.class_path)
+                # self.cfg.data.test.classes = os.path.abspath(self.class_path)
 
                 dataset = build_dataset(self.cfg.data.test)
                 os.remove("test.txt")
@@ -454,7 +454,7 @@ class MMClassification:
                     dummy_folder = os.path.join(dataset_path, 'cache', 'dummy' + str(i))
                     os.mkdir(dummy_folder)
                 self.cfg.data.test.data_prefix = os.path.join(dataset_path, 'cache')
-                self.cfg.data.test.classes = os.path.abspath(self.class_path)
+                # self.cfg.data.test.classes = os.path.abspath(self.class_path)
                 dataset = build_dataset(self.cfg.data.test)
                 # the extra round_up data will be removed during gpu/cpu collect
                 data_loader = build_dataloader(
