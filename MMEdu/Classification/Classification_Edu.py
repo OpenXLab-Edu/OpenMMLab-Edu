@@ -5,6 +5,8 @@ import torch
 import numpy as np
 import cv2
 import PIL
+import onnx
+from onnx import load_model
 from mmcv import Config
 from mmcls.apis import inference_model, init_model, show_result_pyplot, train_model, set_random_seed, single_gpu_test
 from mmcls.models import build_classifier
@@ -738,7 +740,22 @@ class MMClassification:
                 output_file=out_file,
                 do_simplify = False,
                 verify =False)
+        
+        onnx_model = load_model(out_file)
+        unicode_string = ','.join([name for name in classes_list])
+        class_name_metadata = onnx.StringStringEntryProto(key='CLASSES', value=unicode_string)
+        onnx_model.metadata_props.append(class_name_metadata)
+        inputs = onnx_model.graph.input
+        name_to_input = {}
+        for input in inputs:
+            name_to_input[input.name] = input
 
+        for initializer in onnx_model.graph.initializer:
+            if initializer.name in name_to_input:
+                inputs.remove(name_to_input[initializer.name])
+
+        os.remove(out_file)
+        onnx.save(onnx_model, out_file)
         with open(out_file.replace(".onnx", ".py"), "w+") as f:
 
             gen0 = """
