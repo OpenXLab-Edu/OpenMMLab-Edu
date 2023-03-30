@@ -2,6 +2,8 @@ import os
 import json
 import mmcv
 import time
+import onnx
+from onnx import load_model
 from mmcv import Config
 from mmdet.apis import inference_detector, init_detector, show_result_pyplot, train_detector
 from mmdet.models import build_detector
@@ -458,11 +460,29 @@ class MMDetection:
                 do_simplify=False)
         else:
             print("Sorry, we only suport ONNX up to now.")
+
+        classes_list = torch.load(checkpoint, map_location=torch.device('cpu'))['meta']['CLASSES']
+        onnx_model = load_model(out_file)
+        unicode_string = '|'.join([name for name in classes_list])
+        class_name_metadata = onnx.StringStringEntryProto(key='CLASSES', value=unicode_string)
+        onnx_model.metadata_props.append(class_name_metadata)
+        inputs = onnx_model.graph.input
+        name_to_input = {}
+        for input in inputs:
+            name_to_input[input.name] = input
+
+        for initializer in onnx_model.graph.initializer:
+            if initializer.name in name_to_input:
+                inputs.remove(name_to_input[initializer.name])
+
+        os.remove(out_file)
+        onnx.save(onnx_model, out_file)
+
         with open(out_file.replace(".onnx", ".py"), "w+") as f:
             tp = str(self.cfg.test_pipeline).replace("},", "},\n\t")
             # if class_path != None:
             #     classes_list = self.get_class(class_path)
-            classes_list = torch.load(checkpoint, map_location=torch.device('cpu'))['meta']['CLASSES']
+
 
             gen0 = """
 import onnxruntime as rt
