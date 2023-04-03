@@ -2,6 +2,8 @@ import os
 import json
 import mmcv
 import time
+import onnx
+from onnx import load_model
 from mmcv import Config
 from mmdet.apis import inference_detector, init_detector, show_result_pyplot, train_detector
 from mmdet.models import build_detector
@@ -64,7 +66,7 @@ class MMDetection:
         self.backbonedict = {
             "FasterRCNN": os.path.join(self.file_dirname, 'models', 'FasterRCNN/FasterRCNN.py'),
             "Yolov3": os.path.join(self.file_dirname, 'models', 'Yolov3/Yolov3.py'),
-            "SSD_Lite":os.path.join(self.file_dirname, 'models', 'SSD_Lite/SSD_Lite.py'),
+            "SSD_Lite": os.path.join(self.file_dirname, 'models', 'SSD_Lite/SSD_Lite.py'),
             # "Mask_RCNN":os.path.join(self.file_dirname, 'models', 'Mask_RCNN/Mask_RCNN.py'),
             # 下略
         }
@@ -93,15 +95,13 @@ class MMDetection:
         self.cfg.model.backbone.frozen_stages = Frozen_stages
 
         if self.num_classes != -1:
-            if "RCNN" not in self.backbone: # 单阶段
-                self.cfg.model.bbox_head.num_classes =self.num_classes
-            elif self.backbone == "FasterRCNN": # rcnn系列 双阶段
+            if "RCNN" not in self.backbone:  # 单阶段
+                self.cfg.model.bbox_head.num_classes = self.num_classes
+            elif self.backbone == "FasterRCNN":  # rcnn系列 双阶段
                 self.cfg.model.roi_head.bbox_head.num_classes = self.num_classes
             elif self.backbone == "Mask_RCNN":
                 self.cfg.model.roi_head.bbox_head.num_classes = self.num_classes
                 self.cfg.model.roi_head.mask_head.num_classes = self.num_classes
-
-
 
         self.load_dataset(self.dataset_path)
         # 添加需要进行检测的类名
@@ -123,6 +123,7 @@ class MMDetection:
         # 创建工作目录
         mmcv.mkdir_or_exist(os.path.abspath(self.cfg.work_dir))
         # 创建分类器
+        print(self.cfg.data.train,"++++++++++++++++++++++++++")
         datasets = [build_dataset(self.cfg.data.train)]
         model = build_detector(self.cfg.model, train_cfg=self.cfg.get(
             'train_cfg'), test_cfg=self.cfg.get('test_cfg'))
@@ -153,6 +154,16 @@ class MMDetection:
         self.cfg.seed = random_seed
         if batch_size is not None:
             self.cfg.data.samples_per_gpu = batch_size
+
+        meta_info = {
+            'tool':'MMEdu', 
+            'task':'Detection',
+            'backbone':self.backbone, 
+            'device':device,
+            'dataset_size':len(datasets[0]),
+            'learning_rate':lr
+        }
+
         train_detector(
             model,
             datasets,
@@ -160,7 +171,7 @@ class MMDetection:
             distributed=distributed,
             validate=validate,
             timestamp=time.strftime('%Y%m%d_%H%M%S', time.localtime()),
-            meta=dict()
+            meta=meta_info
         )
 
     def print_result(self, res=None):
@@ -188,17 +199,19 @@ class MMDetection:
             self.cfg.data.train.classes = self.cfg.classes
             self.cfg.data.test.classes = self.cfg.classes
             self.cfg.data.val.classes = self.cfg.classes
-            if "RCNN" not in self.backbone: # 单阶段
+            if "RCNN" not in self.backbone:  # 单阶段
                 self.cfg.model.bbox_head.num_classes = len(self.cfg.classes)
-            else: # rcnn系列 双阶段
-                self.cfg.model.roi_head.bbox_head.num_classes =  len(self.cfg.classes)
+            else:  # rcnn系列 双阶段
+                self.cfg.model.roi_head.bbox_head.num_classes = len(self.cfg.classes)
             # self.cfg.model.roi_head.bbox_head.num_classes = len(self.cfg.classes)
             self.infer_model = init_detector(self.cfg, checkpoint, device=device)
             self.infer_model.CLASSES = self.cfg.classes
         else:
             self.infer_model = init_detector(self.cfg, self.checkpoint, device=device)
-        if self.backbone not in ["Yolov3", "SSD_Lite"]: self.infer_model.test_cfg.rpn.nms.iou_threshold = 1 - rpn_threshold
-        if self.backbone not in ["Yolov3", "SSD_Lite"]: self.infer_model.test_cfg.rcnn.nms.iou_threshold = 1 - rcnn_threshold
+        if self.backbone not in ["Yolov3",
+                                 "SSD_Lite"]: self.infer_model.test_cfg.rpn.nms.iou_threshold = 1 - rpn_threshold
+        if self.backbone not in ["Yolov3",
+                                 "SSD_Lite"]: self.infer_model.test_cfg.rcnn.nms.iou_threshold = 1 - rcnn_threshold
 
     def fast_inference(self, image, show=False, save_fold='det_result'):
         img_array = mmcv.imread(image)
@@ -243,7 +256,7 @@ class MMDetection:
         #     elif self.backbone == "Mask_RCNN":
         #         self.cfg.model.roi_head.bbox_head.num_classes = self.num_classes
         #         self.cfg.model.roi_head.mask_head.num_classes = self.num_classes
-        
+
         if image == None:
             self.is_sample = True
             sample_return = """
@@ -256,7 +269,7 @@ class MMDetection:
         self.is_sample = False
         print("========= begin inference ==========")
 
-        if self.num_classes != -1 and self.backbone not in ["Yolov3", "SSD_Lite"] :
+        if self.num_classes != -1 and self.backbone not in ["Yolov3", "SSD_Lite"]:
             self.cfg.model.roi_head.bbox_head.num_classes = self.num_classes
 
         if checkpoint:
@@ -267,9 +280,9 @@ class MMDetection:
 
             self.num_classes = len(self.cfg.classes)
             if self.num_classes != -1:
-                if "RCNN" not in self.backbone: # 单阶段
-                    self.cfg.model.bbox_head.num_classes =self.num_classes
-                elif self.backbone == "FasterRCNN": # rcnn系列 双阶段
+                if "RCNN" not in self.backbone:  # 单阶段
+                    self.cfg.model.bbox_head.num_classes = self.num_classes
+                elif self.backbone == "FasterRCNN":  # rcnn系列 双阶段
                     self.cfg.model.roi_head.bbox_head.num_classes = self.num_classes
                 elif self.backbone == "Mask_RCNN":
                     self.cfg.model.roi_head.bbox_head.num_classes = self.num_classes
@@ -352,10 +365,13 @@ class MMDetection:
             self.cfg.data.train.img_prefix = os.path.join(self.dataset_path, 'images/train/')
             self.cfg.data.train.ann_file = os.path.join(self.dataset_path, 'annotations/train.json')
 
-        self.cfg.data.val.img_prefix = os.path.join(self.dataset_path, 'images/test/')
+        if os.path.exists(os.path.join(self.dataset_path, 'images/valid/')):
+            self.cfg.data.val.img_prefix = os.path.join(self.dataset_path, 'images/valid/')
+        else:
+            self.cfg.data.val.img_prefix = os.path.join(self.dataset_path, 'images/test/')
         self.cfg.data.val.ann_file = os.path.join(self.dataset_path, 'annotations/valid.json')
 
-        self.cfg.data.test.img_prefix = os.path.join(self.dataset_path, 'images/test/')
+        self.cfg.data.test.img_prefix = os.path.join(self.dataset_path, 'images/valid/')
         self.cfg.data.test.ann_file = os.path.join(self.dataset_path, 'annotations/valid.json')
 
     def get_class(self, class_path):
@@ -375,7 +391,7 @@ class MMDetection:
                     classes = classes + (cat['name'],)
         return classes
 
-    def convert(self, checkpoint=None, backend="ONNX", out_file="convert_model.onnx",device='cpu'):
+    def convert(self, checkpoint=None, backend="ONNX", out_file="convert_model.onnx", device='cpu'):
         import os.path as osp
         from mmdet.core.export import build_model_from_cfg
 
@@ -390,7 +406,7 @@ class MMDetection:
         else:
             raise ValueError('invalid input shape')
         self.cfg.model.pretrained = None
-        if self.backbone not in ["Yolov3", "SSD_Lite"] :
+        if self.backbone not in ["Yolov3", "SSD_Lite"]:
             self.cfg.model.roi_head.bbox_head.num_classes = self.num_classes
         else:
             self.cfg.model.bbox_head.num_classes = self.num_classes
@@ -398,7 +414,7 @@ class MMDetection:
         # build the model and load checkpoint
         # detector = build_detector(self.cfg.model)
         # model = build_model_from_cfg(self.config, checkpoint)
-        
+
         if checkpoint:
             # 加载数据集及配置文件的路径
             # self.load_dataset(self.dataset_path)
@@ -406,9 +422,9 @@ class MMDetection:
             self.cfg.classes = torch.load(checkpoint, map_location=torch.device('cpu'))['meta']['CLASSES']
             self.num_classes = len(self.cfg.classes)
             if self.num_classes != -1:
-                if "RCNN" not in self.backbone: # 单阶段
-                    self.cfg.model.bbox_head.num_classes =self.num_classes
-                elif self.backbone == "FasterRCNN": # rcnn系列 双阶段
+                if "RCNN" not in self.backbone:  # 单阶段
+                    self.cfg.model.bbox_head.num_classes = self.num_classes
+                elif self.backbone == "FasterRCNN":  # rcnn系列 双阶段
                     self.cfg.model.roi_head.bbox_head.num_classes = self.num_classes
                 elif self.backbone == "Mask_RCNN":
                     self.cfg.model.roi_head.bbox_head.num_classes = self.num_classes
@@ -422,11 +438,11 @@ class MMDetection:
             model.CLASSES = self.cfg.classes
         else:
             model = init_detector(self.cfg, self.checkpoint, device=device)
-        if self.backbone not in ["Yolov3", "SSD_Lite"]: model.test_cfg.rpn.nms.iou_threshold = 0.3 # 1 - rpn_threshold
-        if self.backbone not in ["Yolov3", "SSD_Lite"]: model.test_cfg.rcnn.nms.iou_threshold = 0.3 # 1 - rcnn_threshold
+        if self.backbone not in ["Yolov3", "SSD_Lite"]: model.test_cfg.rpn.nms.iou_threshold = 0.3  # 1 - rpn_threshold
+        if self.backbone not in ["Yolov3",
+                                 "SSD_Lite"]: model.test_cfg.rcnn.nms.iou_threshold = 0.3  # 1 - rcnn_threshold
 
-
-        #detector = build_detector(self.cfg.model, test_cfg=self.cfg.get('test_cfg'))
+        # detector = build_detector(self.cfg.model, test_cfg=self.cfg.get('test_cfg'))
         # detector.CLASSES = self.num_classes
         normalize_cfg = parse_normalize_cfg(self.cfg.test_pipeline)
         input_img = osp.join(osp.dirname(__file__), './demo/demo.jpg')
@@ -444,25 +460,42 @@ class MMDetection:
                 do_simplify=False)
         else:
             print("Sorry, we only suport ONNX up to now.")
+
+        classes_list = torch.load(checkpoint, map_location=torch.device('cpu'))['meta']['CLASSES']
+        onnx_model = load_model(out_file)
+        unicode_string = '|'.join([name for name in classes_list])
+        class_name_metadata = onnx.StringStringEntryProto(key='CLASSES', value=unicode_string)
+        onnx_model.metadata_props.append(class_name_metadata)
+        inputs = onnx_model.graph.input
+        name_to_input = {}
+        for input in inputs:
+            name_to_input[input.name] = input
+
+        for initializer in onnx_model.graph.initializer:
+            if initializer.name in name_to_input:
+                inputs.remove(name_to_input[initializer.name])
+
+        os.remove(out_file)
+        onnx.save(onnx_model, out_file)
+
         with open(out_file.replace(".onnx", ".py"), "w+") as f:
-            tp = str(self.cfg.test_pipeline).replace("},","},\n\t")
+            tp = str(self.cfg.test_pipeline).replace("},", "},\n\t")
             # if class_path != None:
             #     classes_list = self.get_class(class_path)
-            classes_list = torch.load(checkpoint, map_location=torch.device('cpu'))['meta']['CLASSES']
+
 
             gen0 = """
 import onnxruntime as rt
-import BaseData
-import numpy as np
 import cv2
+from BaseDT.data_image import ImageData
+from BaseDT.plot import imshow_det_bboxes
 
 cap = cv2.VideoCapture(0)
 ret_flag,image = cap.read()
 cap.release()
 """
             gen_sz = """
-image = cv2.resize(image,(sz_h,sz_w))
-tag = 
+class_names = 
 """
             gen1 = """
 sess = rt.InferenceSession('
@@ -470,38 +503,24 @@ sess = rt.InferenceSession('
             gen2 = """', None)
 input_name = sess.get_inputs()[0].name
 output_names = [o.name for o in sess.get_outputs()]
-dt = BaseData.ImageData(image, backbone="
+dt = ImageData(image, backbone="
 """
 
             gen3 = """")
 input_data = dt.to_tensor()
-outputs = sess.run(output_names, {input_name: input_data})
+pred_onx = sess.run(output_names, {input_name: input_data})
+boxes = pred_onx[0][0]
+labels = pred_onx[1][0]
 
-boxes = outputs[0]
-labels = outputs[1][0]
-img_height, img_width = image.shape[:2]
-size = min([img_height, img_width]) * 0.001
-text_thickness = int(min([img_height, img_width]) * 0.001)
+imshow_det_bboxes(img, bboxes = boxes,labels = labels, class_names = class_names, score_thr = 0.8) #根据需求修改阈值score_thr
 
-idx = 0
-for box in zip(boxes[0]):
-    x1, y1, x2, y2, score = box[0]
-    label = tag[labels[idx]]
-    idx = idx + 1
-    caption = f'{label}{int(score * 100)}%'
-    if score >= 0.15:
-        (tw, th), _ = cv2.getTextSize(text=caption, fontFace=cv2.FONT_HERSHEY_SIMPLEX,
-                                      fontScale=size, thickness=text_thickness)
-        th = int(th * 1.2)
-        cv2.rectangle(image, (int(x1), int(y1)), (int(x2), int(y2)), (255, 0, 0), 2)
-        cv2.putText(image, caption, (int(x1), int(y1)),
-                    cv2.FONT_HERSHEY_SIMPLEX, size, (255, 255, 255), text_thickness, cv2.LINE_AA)
-
-cv2.imwrite("result.jpg", image)
-""" 
+"""
             ashape = self.cfg.test_pipeline[1].img_scale
             # if class_path != None:
-            gen = gen0.strip("\n") + '\n' + gen_sz.replace('sz_h',str(ashape[0])).replace('sz_w',str(ashape[1])).strip('\n') + str(classes_list)+ "\n" + gen1.strip("\n") + out_file + gen2.strip("\n") + str(self.backbone) + gen3
+            gen = gen0.strip("\n") + '\n' + gen_sz.replace('sz_h', str(ashape[0])).replace('sz_w',
+                                                                                           str(ashape[1])).strip(
+                '\n') + str(classes_list) + "\n" + gen1.strip("\n") + out_file + gen2.strip("\n") + str(
+                self.backbone) + gen3
             # else:
             #     gen = gen0.strip("tag = \n") + "\n\n" + gen1.strip("\n")+out_file+ gen2.strip("\n") + str(self.backbone) + gen3.replace("tag[labels[idx]]", "labels[idx]")
             f.write(gen)
@@ -518,6 +537,7 @@ def parse_normalize_cfg(test_pipeline):
     assert len(norm_config_li) == 1, '`norm_config` should only have one'
     norm_config = norm_config_li[0]
     return norm_config
+
 
 def pytorch2onnx(model,
                  input_img,
@@ -633,11 +653,11 @@ def pytorch2onnx(model,
         # check by onnx
         onnx_model = onnx.load(output_file)
         onnx.checker.check_model(onnx_model)
-        #print(model.CLASSES)
+        # print(model.CLASSES)
         # wrap onnx model
         onnx_model = ONNXRuntimeDetector(output_file, model.CLASSES, 0)
         if dynamic_export:
-            # scale up to test dynamic shape
+            # scale up to valid dynamic shape
             h, w = [int((_ * 1.5) // 32 * 32) for _ in input_shape[2:]]
             h, w = min(1344, h), min(1344, w)
             input_config['input_shape'] = (1, 3, h, w)

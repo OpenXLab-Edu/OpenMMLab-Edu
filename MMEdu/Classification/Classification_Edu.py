@@ -5,6 +5,8 @@ import torch
 import numpy as np
 import cv2
 import PIL
+import onnx
+from onnx import load_model
 from mmcv import Config
 from mmcls.apis import inference_model, init_model, show_result_pyplot, train_model, set_random_seed, single_gpu_test
 from mmcls.models import build_classifier
@@ -12,6 +14,26 @@ from mmcls.datasets import  build_dataloader,build_dataset
 from mmcv.runner import load_checkpoint
 from mmcv.parallel import collate, scatter
 from mmcls.datasets.pipelines import Compose
+
+def pth_info(checkpoint):
+    import torch
+    ckpt = torch.load(checkpoint,map_location='cpu')
+    meta = ckpt['meta']
+    m = list(meta.keys())
+    if 'device' in m:
+        m.insert(0,m.pop(m.index('device')))
+    if 'backbone' in m:
+        m.insert(0,m.pop(m.index('backbone')))
+    if 'tool' in m:
+        m.insert(0,m.pop(m.index('tool')))
+
+
+    print(checkpoint,"相关信息如下:")
+    print("="*(len(checkpoint)+9))
+    for i in m:
+        print(i,":",meta[i])
+    print("="*(len(checkpoint)+9))
+
 
 class MMClassification:
     def sota(self):
@@ -184,6 +206,16 @@ class MMClassification:
         if batch_size is not None:
             self.cfg.data.samples_per_gpu = batch_size
 
+        meta_info = {
+            'tool':'MMEdu', 
+            'task':'Classification',
+            'backbone':self.backbone, 
+            'device':device,
+            'dataset_size':len(datasets[0]),
+            'learning_rate':lr
+        }
+
+
         train_model(
             model,
             datasets,
@@ -192,8 +224,9 @@ class MMClassification:
             validate=validate,
             timestamp=time.strftime('%Y%m%d_%H%M%S', time.localtime()),
             device=device,
-            meta=dict()
+            meta=meta_info
         )
+            
 
     def print_result(self, res=None):
         if self.is_sample == True:
@@ -707,17 +740,33 @@ class MMClassification:
                 output_file=out_file,
                 do_simplify = False,
                 verify =False)
+        
+        onnx_model = load_model(out_file)
+        unicode_string = ','.join([name for name in classes_list])
+        class_name_metadata = onnx.StringStringEntryProto(key='CLASSES', value=unicode_string)
+        onnx_model.metadata_props.append(class_name_metadata)
+        inputs = onnx_model.graph.input
+        name_to_input = {}
+        for input in inputs:
+            name_to_input[input.name] = input
 
+        for initializer in onnx_model.graph.initializer:
+            if initializer.name in name_to_input:
+                inputs.remove(name_to_input[initializer.name])
+
+        os.remove(out_file)
+        onnx.save(onnx_model, out_file)
         with open(out_file.replace(".onnx", ".py"), "w+") as f:
 
             gen0 = """
 import onnxruntime as rt
-import BaseData
+from BaseDT.data_image import ImageData
 import numpy as np
 import cv2
 
-tag = 
+class_names = 
 """
+
             gen1 = """
 sess = rt.InferenceSession('
 """
@@ -727,7 +776,7 @@ out_name = sess.get_outputs()[0].name
 
 cap = cv2.VideoCapture(0)
 ret_flag,Vshow = cap.read()
-dt = BaseData.ImageData(Vshow, backbone="
+dt = ImageData(Vshow, backbone="
 """
 
             gen3 = """")
@@ -737,6 +786,7 @@ pred_onx = sess.run([out_name], {input_name: input_data})
 ort_output = pred_onx[0]
 idx = np.argmax(ort_output, axis=1)[0]
 print('result:' + tag[idx])
+cap.release()
 """ 
             # if class_path != None:
             gen = gen0.strip("\n") + str(classes_list)+ "\n" + gen1.strip("\n")+out_file+ gen2.strip("\n") + str(self.backbone) + gen3
@@ -884,4 +934,5 @@ def pytorch2onnx(model,
         if not np.allclose(pytorch_result, onnx_result):
             raise ValueError(
                 'The outputs are different between Pytorch and ONNX')
-        print('The outputs are same between Pytorch and ONNX')                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  
+        print('The outputs are same between Pytorch and ONNX')
+        
