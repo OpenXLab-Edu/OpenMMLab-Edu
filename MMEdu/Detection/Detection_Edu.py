@@ -156,9 +156,9 @@ class MMDetection:
             self.cfg.data.samples_per_gpu = batch_size
 
         meta_info = {
-            'tool':'MMEdu', 
+            'tool':'MMEdu',
             'task':'Detection',
-            'backbone':self.backbone, 
+            'backbone':self.backbone,
             'device':device,
             'dataset_size':len(datasets[0]),
             'learning_rate':lr
@@ -486,16 +486,13 @@ import cv2
 import onnxruntime as rt
 from BaseDT.data import ImageData, ModelData
 from BaseDT.plot import imshow_det_bboxes
-
 model_path = '
 """
             gen1 = """'
-
 cap = cv2.VideoCapture(0)
 sess = rt.InferenceSession(model_path, None)
 input_name = sess.get_inputs()[0].name
 output_names = [o.name for o in sess.get_outputs()]
-
 ret,img = cap.read()
 cap.release()
 dt = ImageData(img, backbone='
@@ -509,8 +506,6 @@ img = imshow_det_bboxes(img, bboxes=boxes, labels=labels, class_names=class_name
 """
             gen = gen0.strip('\n') + out_file + gen1.strip('\n') + str(self.backbone) + gen2
             f.write(gen)
-
-
 def parse_normalize_cfg(test_pipeline):
     transforms = None
     for pipeline in test_pipeline:

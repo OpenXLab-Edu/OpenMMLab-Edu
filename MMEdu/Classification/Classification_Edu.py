@@ -15,24 +15,24 @@ from mmcv.runner import load_checkpoint
 from mmcv.parallel import collate, scatter
 from mmcls.datasets.pipelines import Compose
 
+
 def pth_info(checkpoint):
     import torch
-    ckpt = torch.load(checkpoint,map_location='cpu')
+    ckpt = torch.load(checkpoint, map_location='cpu')
     meta = ckpt['meta']
     m = list(meta.keys())
     if 'device' in m:
-        m.insert(0,m.pop(m.index('device')))
+        m.insert(0, m.pop(m.index('device')))
     if 'backbone' in m:
-        m.insert(0,m.pop(m.index('backbone')))
+        m.insert(0, m.pop(m.index('backbone')))
     if 'tool' in m:
-        m.insert(0,m.pop(m.index('tool')))
+        m.insert(0, m.pop(m.index('tool')))
 
-
-    print(checkpoint,"相关信息如下:")
-    print("="*(len(checkpoint)+9))
+    print(checkpoint, "相关信息如下:")
+    print("=" * (len(checkpoint) + 9))
     for i in m:
-        print(i,":",meta[i])
-    print("="*(len(checkpoint)+9))
+        print(i, ":", meta[i])
+    print("=" * (len(checkpoint) + 9))
 
 
 class MMClassification:
@@ -63,12 +63,13 @@ class MMClassification:
         self.file_dirname = os.path.dirname(os.path.abspath(__file__))
         self.save_fold = None
         if backbone not in self.sota():
-            if os.path.exists(backbone): # 传入配置文件
+            if os.path.exists(backbone):  # 传入配置文件
                 self.config = backbone
                 self.cfg = Config.fromfile(self.config)
                 self.backbone = backbone
             else:
-                info = "Error Code: -302. No such argument: "+backbone +". Currently "+str(self.sota())+" is available."
+                info = "Error Code: -302. No such argument: " + backbone + ". Currently " + str(
+                    self.sota()) + " is available."
                 # print(info)
                 raise Exception(info)
         elif backbone in self.sota():
@@ -80,7 +81,7 @@ class MMClassification:
             backbone_path = os.path.join(self.file_dirname, 'models', self.backbone)
             ckpt_cfg_list = list(os.listdir(backbone_path))
             for item in ckpt_cfg_list:
-                if item[-1] == 'y' and item[0] != '_':  #pip修改1
+                if item[-1] == 'y' and item[0] != '_':  # pip修改1
                     self.config = os.path.join(backbone_path, item)
                 elif item[-1] == 'h':
                     self.checkpoint = os.path.join(backbone_path, item)
@@ -106,23 +107,23 @@ class MMClassification:
 
     def train(self, random_seed=0, save_fold=None, distributed=False, validate=True, device="cpu",
               metric='accuracy', save_best='auto', optimizer="SGD", epochs=100, lr=0.01, weight_decay=0.001,
-              checkpoint=None,batch_size=None,**kwargs):
+              checkpoint=None, batch_size=None, **kwargs):
         if len(kwargs) != 0:
             info = "Error Code: -501. No such parameter: " + next(iter(kwargs.keys()))
             raise Exception(info)
-        if device not in ['cpu','cuda']:
-            info = "Error Code: -301. No such argument: "+ device
+        if device not in ['cpu', 'cuda']:
+            info = "Error Code: -301. No such argument: " + device
             raise Exception(info)
-        is_cuda  = torch.cuda.is_available()
+        is_cuda = torch.cuda.is_available()
         if device == 'cpu' and is_cuda:
             print("You can use  'device=cuda' to accelerate !")
         elif device == 'cuda' and not is_cuda:
             raise Exception("Error Code: -301. Your device doesn't support cuda.")
         if validate not in [True, False]:
-            info = "Error Code: -303. No such argument: "+ validate
+            info = "Error Code: -303. No such argument: " + validate
             raise Exception(info)
         if checkpoint != None and checkpoint.split(".")[-1] != 'pth':
-            info = "Error Code: -202. Checkpoint file type error:"+ checkpoint
+            info = "Error Code: -202. Checkpoint file type error:" + checkpoint
             raise Exception(info)
 
         set_random_seed(seed=random_seed)
@@ -148,7 +149,7 @@ class MMClassification:
                 self.cfg.model.head.num_classes = self.num_classes
 
         self.load_dataset(self.dataset_path)
-        if  'val_set' not in os.listdir(self.dataset_path):
+        if 'val_set' not in os.listdir(self.dataset_path):
             print("Unable to validate during training due to lack of validation set !")
         datasets = None
         try:
@@ -158,7 +159,7 @@ class MMClassification:
                 info = "Error Code: -101. No such dataset directory:" + self.dataset_path
             else:
                 err = str(err).split(":")[-1]
-                info = "Error Code: -201. Dataset file type error.  No such file:"+ err
+                info = "Error Code: -201. Dataset file type error.  No such file:" + err
             raise Exception(info)
         # 进行
         self.cfg.work_dir = self.save_fold
@@ -173,9 +174,8 @@ class MMClassification:
                 load_checkpoint(model, checkpoint, map_location=torch.device(device))
                 # model = init_model(self.cfg, checkpoint)
             except FileNotFoundError:
-                    info = "Error Code: -102. No such checkpoint file:" + checkpoint
-                    raise Exception(info)
-
+                info = "Error Code: -102. No such checkpoint file:" + checkpoint
+                raise Exception(info)
 
         # 添加类别属性以方便可视化
         model.CLASSES = datasets[0].CLASSES
@@ -186,9 +186,9 @@ class MMClassification:
         else:
             self.cfg.evaluation.metric_options = {'topk': (5,)}
         if optimizer == 'Adam':
-            self.cfg.optimizer = dict(type='Adam', lr=lr,betas=(0.9, 0.999),eps=1e-8, weight_decay=0.0001)
+            self.cfg.optimizer = dict(type='Adam', lr=lr, betas=(0.9, 0.999), eps=1e-8, weight_decay=0.0001)
         elif optimizer == 'Adagrad':
-            self.cfg.optimizer = dict(type='Adagrad',lr=lr, lr_decay=0)
+            self.cfg.optimizer = dict(type='Adagrad', lr=lr, lr_decay=0)
         # 根据输入参数更新config文件
         self.cfg.optimizer.lr = lr  # 学习率
         self.cfg.optimizer.type = optimizer  # 优化器
@@ -206,15 +206,17 @@ class MMClassification:
         if batch_size is not None:
             self.cfg.data.samples_per_gpu = batch_size
 
+        import sys
+        sys.path.append("..")
+        from version import __version__
         meta_info = {
-            'tool':'MMEdu',
-            'task':'Classification',
-            'backbone':self.backbone,
-            'device':device,
-            'dataset_size':len(datasets[0]),
-            'learning_rate':lr
+            'tool': 'MMEdu' + __version__,
+            'task': 'Classification',
+            'backbone': self.backbone,
+            'device': device,
+            'dataset_size': len(datasets[0]),
+            'learning_rate': lr
         }
-
 
         train_model(
             model,
@@ -227,7 +229,6 @@ class MMClassification:
             meta=meta_info
         )
 
-
     def print_result(self, res=None):
         if self.is_sample == True:
             print("示例分类结果如下：")
@@ -238,28 +239,27 @@ class MMClassification:
             print(self.chinese_res)
         return self.chinese_res
 
-
     def load_checkpoint(self,
-                  checkpoint=None,
-                  device='cpu',
-                  **kwargs,
-                  ):
+                        checkpoint=None,
+                        device='cpu',
+                        **kwargs,
+                        ):
         if len(kwargs) != 0:
-            info = "Error Code: -501. No such parameter: "+ next(iter(kwargs.keys()))
+            info = "Error Code: -501. No such parameter: " + next(iter(kwargs.keys()))
             raise Exception(info)
-        if device not in ['cpu','cuda']:
-            info = "Error Code: -301. No such argument: "+ device
+        if device not in ['cpu', 'cuda']:
+            info = "Error Code: -301. No such argument: " + device
             raise Exception(info)
-        is_cuda  = torch.cuda.is_available()
+        is_cuda = torch.cuda.is_available()
         if device == 'cpu' and is_cuda:
             print("You can use  'device=cuda' to accelerate !")
         elif device == 'cuda' and not is_cuda:
             raise Exception("Error Code: -301. Your device doesn't support cuda.")
         if checkpoint != None and checkpoint.split(".")[-1] != 'pth':
-            info = "Error Code: -202. Checkpoint file type error:"+ checkpoint
+            info = "Error Code: -202. Checkpoint file type error:" + checkpoint
             raise Exception(info)
         # if not checkpoint:
-            # checkpoint = os.path.join(self.cwd, 'checkpoints/cls_model/hand_gray/latest.pth')
+        # checkpoint = os.path.join(self.cwd, 'checkpoints/cls_model/hand_gray/latest.pth')
         self.device = device
         classed_name = torch.load(checkpoint)['meta']['CLASSES']
         # classed_name = self.get_class(class_path)
@@ -271,34 +271,34 @@ class MMClassification:
             else:
                 self.cfg.model.head.num_classes = self.num_classes
 
-        checkpoint = os.path.abspath(checkpoint) # pip修改2
+        checkpoint = os.path.abspath(checkpoint)  # pip修改2
         self.checkpoint = checkpoint
         try:
             self.infer_model = init_model(self.cfg, checkpoint, device=device)
         except FileNotFoundError:
-            info = "Error Code: -102. No such checkpoint file:"+ checkpoint
+            info = "Error Code: -102. No such checkpoint file:" + checkpoint
             raise Exception(info)
         self.infer_model.CLASSES = classed_name
 
     def inference(self, device='cpu',
-        checkpoint=None,
-        image=None,
-        show=True,
-        save_fold='cls_result',
-        **kwargs,
-        ):
+                  checkpoint=None,
+                  image=None,
+                  show=True,
+                  save_fold='cls_result',
+                  **kwargs,
+                  ):
         if len(kwargs) != 0:
             info = "Error Code: -501. No such parameter: " + next(iter(kwargs.keys()))
             raise Exception(info)
-        if device not in ['cpu','cuda']:
-            info = "Error Code: -301. No such argument: "+ device
+        if device not in ['cpu', 'cuda']:
+            info = "Error Code: -301. No such argument: " + device
             raise Exception(info)
-        is_cuda  = torch.cuda.is_available()
+        is_cuda = torch.cuda.is_available()
         if device == 'cpu' and is_cuda:
             print("You can use  'device=cuda' to accelerate !")
         elif device == 'cuda' and not is_cuda:
             raise Exception("Error Code: -301. Your device doesn't support cuda.")
-        if type(image)!=np.ndarray and image == None: # 传入图片为空，示例输出
+        if type(image) != np.ndarray and image == None:  # 传入图片为空，示例输出
             self.is_sample = True
             sample_return = """
 {'pred_label': 2, 'pred_score': 0.9930743, 'pred_class': 'scissors'}
@@ -310,23 +310,24 @@ class MMClassification:
         #     info = "Error Code: -304. No such argument:"+ image+"which is" +type(image)
         #     raise Exception(info)
         if type(image) != PIL.PngImagePlugin.PngImageFile and type(image) != np.ndarray and not os.path.exists(image):
-            info = "Error Code: -103. No such file:"+ image
+            info = "Error Code: -103. No such file:" + image
             raise Exception(info)
-        if type(image) != PIL.PngImagePlugin.PngImageFile and os.path.isfile(image) and image.split(".")[-1].lower() not in ["png","jpg","jpeg","bmp"]:
-            info = "Error Code: -203. File type error:"+ image
+        if type(image) != PIL.PngImagePlugin.PngImageFile and os.path.isfile(image) and image.split(".")[
+            -1].lower() not in ["png", "jpg", "jpeg", "bmp"]:
+            info = "Error Code: -203. File type error:" + image
             raise Exception(info)
 
         if checkpoint != None and checkpoint.split(".")[-1] != 'pth':
-            info = "Error Code: -202. Checkpoint file type error:"+ checkpoint
+            info = "Error Code: -202. Checkpoint file type error:" + checkpoint
             raise Exception(info)
         if not checkpoint:
             checkpoint = os.path.join(self.cwd, 'checkpoints/cls_model/hand_gray/latest.pth')
 
-        checkpoint = os.path.abspath(checkpoint) # pip修改2
-        self.load_checkpoint(device= device, checkpoint=os.path.abspath(checkpoint))
-        return self.fast_inference(image=image, show=show,save_fold=save_fold, **kwargs)
+        checkpoint = os.path.abspath(checkpoint)  # pip修改2
+        self.load_checkpoint(device=device, checkpoint=os.path.abspath(checkpoint))
+        return self.fast_inference(image=image, show=show, save_fold=save_fold, **kwargs)
 
-    def fast_inference(self, image, show=False, save_fold='cls_result',**kwargs):
+    def fast_inference(self, image, show=False, save_fold='cls_result', **kwargs):
         if len(kwargs) != 0:
             info = "Error Code: -501. No such parameter: " + next(iter(kwargs.keys()))
             raise Exception(info)
@@ -337,14 +338,13 @@ class MMClassification:
             print("请先使用load_checkpoint()方法加载权重！")
             return
 
-
         print("========= begin inference ==========")
         classed_name = self.infer_model.CLASSES
         self.num_classes = len(classed_name)
 
         results = []
         dataset_path = os.getcwd()
-        if type(image) == PIL.PngImagePlugin.PngImageFile: # 以PIL读入图片
+        if type(image) == PIL.PngImagePlugin.PngImageFile:  # 以PIL读入图片
             self.image_type = "pil"
             image = np.array(image)
 
@@ -367,7 +367,7 @@ class MMClassification:
                 data = test_pipeline(data)
                 # data = scatter([data], [self.device])[0]
                 data_loader = build_dataloader(
-                    [data,data],
+                    [data, data],
                     samples_per_gpu=self.cfg.data.samples_per_gpu,
                     workers_per_gpu=self.cfg.data.workers_per_gpu,
                     shuffle=False,
@@ -382,7 +382,8 @@ class MMClassification:
                     'pred_class': pred_class,
                 }
 
-            self.infer_model.show_result(image, result, show=show, out_file=os.path.join(save_fold, "{}img.jpg".format(self.image_type)))
+            self.infer_model.show_result(image, result, show=show,
+                                         out_file=os.path.join(save_fold, "{}img.jpg".format(self.image_type)))
             chinese_res = []
             tmp = {}
             if isinstance(result['pred_label'], np.int64):
@@ -395,11 +396,11 @@ class MMClassification:
             chinese_res.append(tmp)
             self.chinese_res = chinese_res
 
-        elif os.path.isfile(image): # 以路径读入图片
-            if self.backbone != "LeNet": # 单张图片 其他网络
+        elif os.path.isfile(image):  # 以路径读入图片
+            if self.backbone != "LeNet":  # 单张图片 其他网络
                 img_array = mmcv.imread(image, flag='color')
                 result = inference_model(self.infer_model, img_array)  # 此处的model和外面的无关,纯局部变量
-            else: # 单张图片 Lenet
+            else:  # 单张图片 Lenet
                 imagename = image.split("/")[-1]
                 # build the dataloader
                 f = open("test.txt", 'w')
@@ -438,7 +439,8 @@ class MMClassification:
                     'pred_class': pred_class,
                 }
 
-            self.infer_model.show_result(image, result, show=show, out_file=os.path.join(save_fold, os.path.split(image)[1]))
+            self.infer_model.show_result(image, result, show=show,
+                                         out_file=os.path.join(save_fold, os.path.split(image)[1]))
             chinese_res = []
             tmp = {}
             if isinstance(result['pred_label'], np.int64):
@@ -455,7 +457,7 @@ class MMClassification:
             print("\n========= finish inference ==========")
             return result
         else:
-            if self.backbone != "LeNet": # 文件夹 其他网络
+            if self.backbone != "LeNet":  # 文件夹 其他网络
                 f = open("test.txt", 'w')
                 for image_name in os.listdir(image):
                     f.write(image_name)
@@ -476,7 +478,7 @@ class MMClassification:
                     shuffle=False,
                     round_up=True)
 
-            else: # 文件夹 Lenet
+            else:  # 文件夹 Lenet
                 dirname = [x.strip() for x in image.split('/') if x.strip() != ''][-1]
                 import shutil
                 if os.path.exists(os.path.join(dataset_path, 'cache')):
@@ -504,20 +506,23 @@ class MMClassification:
 
             results = []
             for i in range(len(results_tmp)):
-                pred_class = classed_name[np.argmax(results_tmp[i])] if classed_name[np.argmax(results_tmp[i])][-1:] != "\n" else classed_name[ np.argmax(results_tmp[i])][:-1]
+                pred_class = classed_name[np.argmax(results_tmp[i])] if classed_name[np.argmax(results_tmp[i])][
+                                                                        -1:] != "\n" else classed_name[np.argmax(
+                    results_tmp[i])][:-1]
                 if isinstance(np.argmax(results_tmp[i]), np.int64):
                     pred_label = int(np.argmax(results_tmp[i]))
                 if isinstance(results_tmp[i][np.argmax(results_tmp[i])], np.float32):
                     pred_score = float(results_tmp[i][np.argmax(results_tmp[i])])
                     tmp_result = {
-                    'pred_label': pred_label,  # np.argmax(result[i]),
-                    'pred_score': pred_score,  # result[i][np.argmax(result[i])],
-                    'pred_class': pred_class,
+                        'pred_label': pred_label,  # np.argmax(result[i]),
+                        'pred_score': pred_score,  # result[i][np.argmax(result[i])],
+                        'pred_class': pred_class,
                     }
                     results.append(tmp_result)
 
             for i, img in enumerate(os.listdir(image)):
-                self.infer_model.show_result(os.path.join(image,img), results[i], out_file=os.path.join(save_fold, os.path.split(img)[1]))
+                self.infer_model.show_result(os.path.join(image, img), results[i],
+                                             out_file=os.path.join(save_fold, os.path.split(img)[1]))
 
             # model.show_result(image, result, show=show, out_file=os.path.join(save_fold, os.path.split(image)[1]))
             chinese_res = []
@@ -535,23 +540,24 @@ class MMClassification:
 
         return results
 
-    def load_dataset(self, path,**kwargs):
+    def load_dataset(self, path, **kwargs):
         if len(kwargs) != 0:
-            info = "Error Code: -501. No such parameter: "+ next(iter(kwargs.keys()))
+            info = "Error Code: -501. No such parameter: " + next(iter(kwargs.keys()))
             raise Exception(info)
         self.dataset_path = path
         if not isinstance(path, str):
-            info = "Error Code: -201. Dataset file type error, which should be <class 'str'> instead of "+ type(path)+"."
+            info = "Error Code: -201. Dataset file type error, which should be <class 'str'> instead of " + type(
+                path) + "."
             raise Exception(info)
-        if not os.path.exists(path):   # 数据集路径不存在
-            info = "Error Code: -101. No such dateset directory: "+ path
+        if not os.path.exists(path):  # 数据集路径不存在
+            info = "Error Code: -101. No such dateset directory: " + path
             raise Exception(info)
         val_set = os.path.join(path, 'val_set')
         val_txt = os.path.join(path, 'val.txt')
         if os.path.exists(val_set) and os.path.exists(val_txt):
             val_num = 0
             for i in os.listdir(val_set):
-                val_num += len(os.listdir(os.path.join(val_set,i)))
+                val_num += len(os.listdir(os.path.join(val_set, i)))
             if val_num != len(open(val_txt).readlines()):
                 info = "Error Code: -201. Dataset file type error. The number of val set images does not match that in val.txt"
                 raise Exception(info)
@@ -566,7 +572,7 @@ class MMClassification:
                 if "txt" not in file:
                     impath = os.path.join(root, file)
                     # print("impath", impath)
-                    if  "jpg"  in impath or "png" in impath:
+                    if "jpg" in impath or "png" in impath:
                         # print(impath)
                         img = cv2.imread(impath)
                         try:
@@ -589,15 +595,15 @@ class MMClassification:
             # print("生成classes.txt")
             training_set = os.path.join(path, 'training_set')
             content = sorted(os.listdir(training_set))
-            content = [i+"\n" for i in content]
+            content = [i + "\n" for i in content]
             try:
-                classestxt = open(os.path.join(path,"classes.txt"), mode='w')
+                classestxt = open(os.path.join(path, "classes.txt"), mode='w')
             except:
                 class_permit = False
                 dataset_txt = "dataset_txt"
                 if not os.path.exists(dataset_txt):
                     os.mkdir(dataset_txt)
-                classtxt_path = os.path.join(dataset_txt,"classes.txt")
+                classtxt_path = os.path.join(dataset_txt, "classes.txt")
                 classestxt = open(classtxt_path, mode='w')
 
             classestxt.writelines(content)
@@ -630,8 +636,8 @@ class MMClassification:
 
     def generate_txt(self, path, type):
         permit = True
-        val_set = os.path.join(path, type+'_set')
-        txt_path = os.path.join(path,type+".txt")
+        val_set = os.path.join(path, type + '_set')
+        txt_path = os.path.join(path, type + ".txt")
         try:
             valtxt = open(txt_path, mode='w')
         except:
@@ -639,14 +645,14 @@ class MMClassification:
             dataset_txt = "dataset_txt"
             if not os.path.exists(dataset_txt):
                 os.mkdir(dataset_txt)
-            txt_path = os.path.join(dataset_txt,type+".txt")
+            txt_path = os.path.join(dataset_txt, type + ".txt")
             valtxt = open(txt_path, mode='w')
 
         content = []
         for label, i in enumerate(sorted(os.listdir(val_set))):
-            for j in sorted(os.listdir(os.path.join(val_set,i))):
+            for j in sorted(os.listdir(os.path.join(val_set, i))):
                 # print(os.path.join(i,j), label)
-                content.append("{} {}\n".format(os.path.join(i,j), label))
+                content.append("{} {}\n".format(os.path.join(i, j), label))
         valtxt.writelines(content)
         valtxt.close()
         return permit, txt_path
@@ -663,7 +669,7 @@ class MMClassification:
         model.eval()
         results = []
         dataset = data_loader.dataset
-        prog_bar = mmcv.ProgressBar(task_num=len(dataset),start=False)
+        prog_bar = mmcv.ProgressBar(task_num=len(dataset), start=False)
         from mmcv.utils.timer import Timer
         prog_bar.file.flush()
         prog_bar.timer = Timer()
@@ -699,7 +705,7 @@ class MMClassification:
                     if self.num_classes > 0:
                         x = self.classifier(x.squeeze())
                         x = torch.softmax(x, dim=0)
-                    return (x, )
+                    return (x,)
 
             model = LeNet5_SoftMax(num_classes=self.num_classes)
             new_state_dict = OrderedDict()
@@ -713,14 +719,14 @@ class MMClassification:
             except:
                 print('Please use the checkpoint train by MMEdu')
         else:
-            ashape = [224,224]
+            ashape = [224, 224]
             if len(ashape) == 1:
                 input_shape = (1, 3, ashape[0], ashape[0])
             elif len(ashape) == 2:
                 input_shape = (
-                    1,
-                    3,
-                ) + tuple(ashape)
+                                  1,
+                                  3,
+                              ) + tuple(ashape)
             else:
                 raise ValueError('invalid input shape')
             self.cfg.model.pretrained = None
@@ -735,11 +741,11 @@ class MMClassification:
                 load_checkpoint(classifier, self.checkpoint, map_location='cpu')
 
             pytorch2onnx(
-                classifier, # 模型，此处是分类器
+                classifier,  # 模型，此处是分类器
                 input_shape,
                 output_file=out_file,
-                do_simplify = False,
-                verify =False)
+                do_simplify=False,
+                verify=False)
 
         onnx_model = load_model(out_file)
         unicode_string = '|'.join([name for name in classes_list])
@@ -763,7 +769,6 @@ import cv2
 import numpy as np
 import onnxruntime as rt
 from BaseDT.data import ImageData, ModelData
-
 model_path = '
 """
             gen1 = """'
@@ -771,7 +776,6 @@ cap = cv2.VideoCapture(0)
 sess = rt.InferenceSession(model_path, None)
 input_name = sess.get_inputs()[0].name
 output_name = sess.get_outputs()[0].name
-
 ret,img = cap.read()
 cap.release()
 dt = ImageData(img, backbone='
@@ -791,7 +795,8 @@ idx = np.argmax(pred_onx, axis=1)[0]
 print('label:{}, acc:{}'.format(class_names[idx], pred_onx[0][idx]))
             """
 
-            gen = gen0.strip('\n') + out_file + gen1.strip('\n') + str(self.backbone) + (gen2 if str(self.backbone) != 'LeNet' else gen3)
+            gen = gen0.strip('\n') + out_file + gen1.strip('\n') + str(self.backbone) + (
+                gen2 if str(self.backbone) != 'LeNet' else gen3)
             f.write(gen)
 
 # 模型部署
@@ -814,14 +819,15 @@ def _demo_mm_inputs(input_shape, num_classes):
     }
     return mm_inputs
 
+
 def pytorch2onnx(model,
-                input_shape,
-                opset_version=11,
-                dynamic_export=False,
-                show=False,
-                output_file='tmp.onnx',
-                do_simplify=False,
-                verify=False):
+                 input_shape,
+                 opset_version=11,
+                 dynamic_export=False,
+                 show=False,
+                 output_file='tmp.onnx',
+                 do_simplify=False,
+                 verify=False):
     """Export Pytorch model to ONNX model and verify the outputs are same
     between Pytorch and ONNX.
     Args:
@@ -847,7 +853,7 @@ def pytorch2onnx(model,
         num_classes = model.backbone.num_classes
     else:
         raise AttributeError('Cannot find "num_classes" in both head and '
-                            'backbone, please check the config file.')
+                             'backbone, please check the config file.')
     mm_inputs = _demo_mm_inputs(input_shape, num_classes)
 
     imgs = mm_inputs.pop('imgs')
@@ -875,7 +881,7 @@ def pytorch2onnx(model,
 
     with torch.no_grad():
         torch.onnx.export(
-            model, (img_list, ),
+            model, (img_list,),
             output_file,
             input_names=['input'],
             output_names=['probs'],
@@ -913,7 +919,7 @@ def pytorch2onnx(model,
         if dynamic_export:
             dynamic_test_inputs = _demo_mm_inputs(
                 (input_shape[0], input_shape[1], input_shape[2] * 2,
-                input_shape[3] * 2), model.head.num_classes)
+                 input_shape[3] * 2), model.head.num_classes)
             imgs = dynamic_test_inputs.pop('imgs')
             img_list = [img[None, :] for img in imgs]
 
@@ -935,4 +941,3 @@ def pytorch2onnx(model,
             raise ValueError(
                 'The outputs are different between Pytorch and ONNX')
         print('The outputs are same between Pytorch and ONNX')
-
