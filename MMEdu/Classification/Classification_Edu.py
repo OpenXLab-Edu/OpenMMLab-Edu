@@ -207,9 +207,9 @@ class MMClassification:
             self.cfg.data.samples_per_gpu = batch_size
 
         meta_info = {
-            'tool':'MMEdu', 
+            'tool':'MMEdu',
             'task':'Classification',
-            'backbone':self.backbone, 
+            'backbone':self.backbone,
             'device':device,
             'dataset_size':len(datasets[0]),
             'learning_rate':lr
@@ -226,7 +226,7 @@ class MMClassification:
             device=device,
             meta=meta_info
         )
-            
+
 
     def print_result(self, res=None):
         if self.is_sample == True:
@@ -632,7 +632,7 @@ class MMClassification:
         permit = True
         val_set = os.path.join(path, type+'_set')
         txt_path = os.path.join(path,type+".txt")
-        try: 
+        try:
             valtxt = open(txt_path, mode='w')
         except:
             permit = False
@@ -680,11 +680,11 @@ class MMClassification:
             for _ in range(batch_size):
                 prog_bar.update()
         return results_tmp
-    
+
     def convert(self, checkpoint=None, backend="ONNX", out_file="convert_model.onnx"):
         if not (backend == "ONNX" or backend == 'onnx'):
             print("Sorry, we only suport ONNX up to now.")
-            return 
+            return
         state_dict = torch.load(checkpoint, map_location=torch.device('cpu'))
         classes_list = state_dict['meta']['CLASSES']
         self.num_classes = len(classes_list)
@@ -692,7 +692,7 @@ class MMClassification:
             from mmcls.models.backbones import LeNet5
             from collections import OrderedDict
             model = LeNet5(num_classes=self.num_classes)
-            
+
             class LeNet5_SoftMax(LeNet5):
                 def forward(self, x):
                     x = self.features(x)
@@ -701,7 +701,7 @@ class MMClassification:
                         x = torch.softmax(x, dim=0)
                     return (x, )
 
-            model = LeNet5_SoftMax(num_classes=self.num_classes)    
+            model = LeNet5_SoftMax(num_classes=self.num_classes)
             new_state_dict = OrderedDict()
             for key in state_dict['state_dict']:
                 new_state_dict[key[9:]] = state_dict['state_dict'][key]
@@ -736,13 +736,13 @@ class MMClassification:
 
             pytorch2onnx(
                 classifier, # 模型，此处是分类器
-                input_shape, 
+                input_shape,
                 output_file=out_file,
                 do_simplify = False,
                 verify =False)
-        
+
         onnx_model = load_model(out_file)
-        unicode_string = ','.join([name for name in classes_list])
+        unicode_string = '|'.join([name for name in classes_list])
         class_name_metadata = onnx.StringStringEntryProto(key='CLASSES', value=unicode_string)
         onnx_model.metadata_props.append(class_name_metadata)
         inputs = onnx_model.graph.input
@@ -759,41 +759,41 @@ class MMClassification:
         with open(out_file.replace(".onnx", ".py"), "w+") as f:
 
             gen0 = """
-import onnxruntime as rt
-from BaseDT.data_image import ImageData
-import numpy as np
 import cv2
+import numpy as np
+import onnxruntime as rt
+from BaseDT.data import ImageData, ModelData
 
-class_names = 
+model_path = '
 """
-
-            gen1 = """
-sess = rt.InferenceSession('
-"""
-            gen2 = """', None)
-input_name = sess.get_inputs()[0].name
-out_name = sess.get_outputs()[0].name
-
+            gen1 = """'
 cap = cv2.VideoCapture(0)
-ret_flag,Vshow = cap.read()
-dt = ImageData(Vshow, backbone="
+sess = rt.InferenceSession(model_path, None)
+input_name = sess.get_inputs()[0].name
+output_name = sess.get_outputs()[0].name
+
+ret,img = cap.read()
+cap.release()
+dt = ImageData(img, backbone='
 """
-
-            gen3 = """")
-input_data = dt.to_tensor()
-
-pred_onx = sess.run([out_name], {input_name: input_data})
+            gen2 = """')
+pred_onx = sess.run([output_name], {input_name: dt.to_tensor()})
+class_names = ModelData(model_path).get_labels()
 ort_output = pred_onx[0]
 idx = np.argmax(ort_output, axis=1)[0]
-print('result:' + tag[idx])
-cap.release()
-""" 
-            # if class_path != None:
-            gen = gen0.strip("\n") + str(classes_list)+ "\n" + gen1.strip("\n")+out_file+ gen2.strip("\n") + str(self.backbone) + gen3
-            # else:
-            #     gen = gen0.strip("tag = \n") + "\n\n" + gen1.strip("\n")+out_file+ gen2.strip("\n") + str(self.backbone) + gen3.replace("tag[idx]", "idx")
+print('label:{}, acc:{}'.format(class_names[idx], ort_output[0][idx]))
+            """
+
+            gen3 = """')
+pred_onx = sess.run([output_name], {input_name: dt.to_tensor()})
+class_names = ModelData(model_path).get_labels()
+idx = np.argmax(pred_onx, axis=1)[0]
+print('label:{}, acc:{}'.format(class_names[idx], pred_onx[0][idx]))
+            """
+
+            gen = gen0.strip('\n') + out_file + gen1.strip('\n') + str(self.backbone) + (gen2 if str(self.backbone) != 'LeNet' else gen3)
             f.write(gen)
-    
+
 # 模型部署
 def _demo_mm_inputs(input_shape, num_classes):
     """Create a superset of inputs needed to run test or train batches.
@@ -935,4 +935,4 @@ def pytorch2onnx(model,
             raise ValueError(
                 'The outputs are different between Pytorch and ONNX')
         print('The outputs are same between Pytorch and ONNX')
-        
+

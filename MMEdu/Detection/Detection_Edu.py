@@ -480,49 +480,34 @@ class MMDetection:
 
         with open(out_file.replace(".onnx", ".py"), "w+") as f:
             tp = str(self.cfg.test_pipeline).replace("},", "},\n\t")
-            # if class_path != None:
-            #     classes_list = self.get_class(class_path)
-
 
             gen0 = """
-import onnxruntime as rt
 import cv2
-from BaseDT.data_image import ImageData
+import onnxruntime as rt
+from BaseDT.data import ImageData, ModelData
 from BaseDT.plot import imshow_det_bboxes
 
+model_path = '
+"""
+            gen1 = """'
+
 cap = cv2.VideoCapture(0)
-ret_flag,image = cap.read()
-cap.release()
-"""
-            gen_sz = """
-class_names = 
-"""
-            gen1 = """
-sess = rt.InferenceSession('
-"""
-            gen2 = """', None)
+sess = rt.InferenceSession(model_path, None)
 input_name = sess.get_inputs()[0].name
 output_names = [o.name for o in sess.get_outputs()]
-dt = ImageData(image, backbone="
-"""
 
-            gen3 = """")
-input_data = dt.to_tensor()
-pred_onx = sess.run(output_names, {input_name: input_data})
-boxes = pred_onx[0][0]
+ret,img = cap.read()
+cap.release()
+dt = ImageData(img, backbone='
+"""
+            gen2 = """')
+pred_onx = sess.run(output_names, {input_name: dt.to_tensor()})
+class_names = ModelData(model_path).get_labels()
+boxes = dt.map_orig_coords(pred_onx[0][0])
 labels = pred_onx[1][0]
-
-imshow_det_bboxes(img, bboxes = boxes,labels = labels, class_names = class_names, score_thr = 0.8) #根据需求修改阈值score_thr
-
+img = imshow_det_bboxes(img, bboxes=boxes, labels=labels, class_names=class_names, score_thr=0.8)
 """
-            ashape = self.cfg.test_pipeline[1].img_scale
-            # if class_path != None:
-            gen = gen0.strip("\n") + '\n' + gen_sz.replace('sz_h', str(ashape[0])).replace('sz_w',
-                                                                                           str(ashape[1])).strip(
-                '\n') + str(classes_list) + "\n" + gen1.strip("\n") + out_file + gen2.strip("\n") + str(
-                self.backbone) + gen3
-            # else:
-            #     gen = gen0.strip("tag = \n") + "\n\n" + gen1.strip("\n")+out_file+ gen2.strip("\n") + str(self.backbone) + gen3.replace("tag[labels[idx]]", "labels[idx]")
+            gen = gen0.strip('\n') + out_file + gen1.strip('\n') + str(self.backbone) + gen2
             f.write(gen)
 
 
