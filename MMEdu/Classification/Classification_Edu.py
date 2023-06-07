@@ -1,12 +1,11 @@
-import os
+import os,sys
 import mmcv
 import time
 import torch
 import numpy as np
 import cv2
 import PIL
-import onnx
-from onnx import load_model
+import json
 from mmcv import Config
 from mmcls.apis import inference_model, init_model, show_result_pyplot, train_model, set_random_seed, single_gpu_test
 from mmcls.models import build_classifier
@@ -14,6 +13,9 @@ from mmcls.datasets import  build_dataloader,build_dataset
 from mmcv.runner import load_checkpoint
 from mmcv.parallel import collate, scatter
 from mmcls.datasets.pipelines import Compose
+sys.path.append("..")
+from ..version import __version__
+
 
 def pth_info(checkpoint):
     import torch
@@ -207,26 +209,31 @@ class MMClassification:
             self.cfg.data.samples_per_gpu = batch_size
 
         meta_info = {
-            'tool':'MMEdu', 
+            'tool':'MMEdu'+__version__, 
             'task':'Classification',
             'backbone':self.backbone, 
             'device':device,
             'dataset_size':len(datasets[0]),
             'learning_rate':lr
         }
-
-
+        t = time.strftime('%Y%m%d_%H%M%S', time.localtime())
         train_model(
             model,
             datasets,
             self.cfg,
             distributed=distributed,
             validate=validate,
-            timestamp=time.strftime('%Y%m%d_%H%M%S', time.localtime()),
+            timestamp=t,
             device=device,
             meta=meta_info
         )
-            
+        file = open(os.path.join(self.save_fold ,str(t)+".log.json"), 'r') 
+        log = []
+        import ast 
+        for i in file.readlines():
+            d = ast.literal_eval(i.rstrip('\n'))
+            log.append(d)
+        return log
 
     def print_result(self, res=None):
         if self.is_sample == True:
@@ -237,7 +244,6 @@ class MMClassification:
             print("分类结果如下：")
             print(self.chinese_res)
         return self.chinese_res
-
 
     def load_checkpoint(self,
                   checkpoint=None,
@@ -261,7 +267,7 @@ class MMClassification:
         # if not checkpoint:
             # checkpoint = os.path.join(self.cwd, 'checkpoints/cls_model/hand_gray/latest.pth')
         self.device = device
-        classed_name = torch.load(checkpoint)['meta']['CLASSES']
+        classed_name = torch.load(checkpoint, map_location=torch.device('cpu'))['meta']['CLASSES']
         # classed_name = self.get_class(class_path)
         # self.class_path = class_path
         self.num_classes = len(classed_name)
@@ -381,8 +387,8 @@ class MMClassification:
                     'pred_score': result[0][np.argmax(result[0])],
                     'pred_class': pred_class,
                 }
-
-            self.infer_model.show_result(image, result, show=show, out_file=os.path.join(save_fold, "{}img.jpg".format(self.image_type)))
+            if show== True:
+                self.infer_model.show_result(image, result, show=show, out_file=os.path.join(save_fold, "{}img.jpg".format(self.image_type)))
             chinese_res = []
             tmp = {}
             if isinstance(result['pred_label'], np.int64):
@@ -438,7 +444,8 @@ class MMClassification:
                     'pred_class': pred_class,
                 }
 
-            self.infer_model.show_result(image, result, show=show, out_file=os.path.join(save_fold, os.path.split(image)[1]))
+            if show == True:
+                self.infer_model.show_result(image, result, show=show, out_file=os.path.join(save_fold, os.path.split(image)[1]))
             chinese_res = []
             tmp = {}
             if isinstance(result['pred_label'], np.int64):
@@ -516,8 +523,9 @@ class MMClassification:
                     }
                     results.append(tmp_result)
 
-            for i, img in enumerate(os.listdir(image)):
-                self.infer_model.show_result(os.path.join(image,img), results[i], out_file=os.path.join(save_fold, os.path.split(img)[1]))
+            if show == True:
+                for i, img in enumerate(os.listdir(image)):
+                    self.infer_model.show_result(os.path.join(image,img), results[i], out_file=os.path.join(save_fold, os.path.split(img)[1]))
 
             # model.show_result(image, result, show=show, out_file=os.path.join(save_fold, os.path.split(image)[1]))
             chinese_res = []
@@ -682,9 +690,11 @@ class MMClassification:
         return results_tmp
     
     def convert(self, checkpoint=None, backend="ONNX", out_file="convert_model.onnx"):
+        import onnx
+        from onnx import load_model
         if not (backend == "ONNX" or backend == 'onnx'):
             print("Sorry, we only suport ONNX up to now.")
-            return 
+            return
         state_dict = torch.load(checkpoint, map_location=torch.device('cpu'))
         classes_list = state_dict['meta']['CLASSES']
         self.num_classes = len(classes_list)
@@ -692,16 +702,16 @@ class MMClassification:
             from mmcls.models.backbones import LeNet5
             from collections import OrderedDict
             model = LeNet5(num_classes=self.num_classes)
-            
+
             class LeNet5_SoftMax(LeNet5):
                 def forward(self, x):
                     x = self.features(x)
                     if self.num_classes > 0:
                         x = self.classifier(x.squeeze())
                         x = torch.softmax(x, dim=0)
-                    return (x, )
+                    return (x,)
 
-            model = LeNet5_SoftMax(num_classes=self.num_classes)    
+            model = LeNet5_SoftMax(num_classes=self.num_classes)
             new_state_dict = OrderedDict()
             for key in state_dict['state_dict']:
                 new_state_dict[key[9:]] = state_dict['state_dict'][key]
@@ -713,14 +723,14 @@ class MMClassification:
             except:
                 print('Please use the checkpoint train by MMEdu')
         else:
-            ashape = [224,224]
+            ashape = [224, 224]
             if len(ashape) == 1:
                 input_shape = (1, 3, ashape[0], ashape[0])
             elif len(ashape) == 2:
                 input_shape = (
-                    1,
-                    3,
-                ) + tuple(ashape)
+                                  1,
+                                  3,
+                              ) + tuple(ashape)
             else:
                 raise ValueError('invalid input shape')
             self.cfg.model.pretrained = None
@@ -735,16 +745,20 @@ class MMClassification:
                 load_checkpoint(classifier, self.checkpoint, map_location='cpu')
 
             pytorch2onnx(
-                classifier, # 模型，此处是分类器
-                input_shape, 
+                classifier,  # 模型，此处是分类器
+                input_shape,
                 output_file=out_file,
-                do_simplify = False,
-                verify =False)
-        
+                do_simplify=False,
+                verify=False)
+
         onnx_model = load_model(out_file)
-        unicode_string = ','.join([name for name in classes_list])
-        class_name_metadata = onnx.StringStringEntryProto(key='CLASSES', value=unicode_string)
-        onnx_model.metadata_props.append(class_name_metadata)
+        model_info = {'codebase': 'MMCls', 'modelname': self.backbone, 'classes':classes_list}
+
+        unicode_string = json.dumps(model_info)
+        model_info_metadata = onnx.StringStringEntryProto(key='MODEL_INFO', value=unicode_string)
+        
+        onnx_model.metadata_props.append(model_info_metadata)
+        
         inputs = onnx_model.graph.input
         name_to_input = {}
         for input in inputs:
@@ -759,41 +773,22 @@ class MMClassification:
         with open(out_file.replace(".onnx", ".py"), "w+") as f:
 
             gen0 = """
-import onnxruntime as rt
-from BaseDT.data_image import ImageData
-import numpy as np
 import cv2
-
-class_names = 
+import BaseDeploy as bd
+model_path = '
 """
-
-            gen1 = """
-sess = rt.InferenceSession('
-"""
-            gen2 = """', None)
-input_name = sess.get_inputs()[0].name
-out_name = sess.get_outputs()[0].name
-
+            gen1 = """'
 cap = cv2.VideoCapture(0)
-ret_flag,Vshow = cap.read()
-dt = ImageData(Vshow, backbone="
-"""
-
-            gen3 = """")
-input_data = dt.to_tensor()
-
-pred_onx = sess.run([out_name], {input_name: input_data})
-ort_output = pred_onx[0]
-idx = np.argmax(ort_output, axis=1)[0]
-print('result:' + tag[idx])
+ret, img = cap.read()
+model = bd(model_path)
+result = model.inference(img)
+print(result)
 cap.release()
-""" 
-            # if class_path != None:
-            gen = gen0.strip("\n") + str(classes_list)+ "\n" + gen1.strip("\n")+out_file+ gen2.strip("\n") + str(self.backbone) + gen3
-            # else:
-            #     gen = gen0.strip("tag = \n") + "\n\n" + gen1.strip("\n")+out_file+ gen2.strip("\n") + str(self.backbone) + gen3.replace("tag[idx]", "idx")
+            """
+
+            gen = gen0.strip('\n') + out_file + gen1.strip('\n')
             f.write(gen)
-    
+
 # 模型部署
 def _demo_mm_inputs(input_shape, num_classes):
     """Create a superset of inputs needed to run test or train batches.
@@ -935,4 +930,3 @@ def pytorch2onnx(model,
             raise ValueError(
                 'The outputs are different between Pytorch and ONNX')
         print('The outputs are same between Pytorch and ONNX')
-        
