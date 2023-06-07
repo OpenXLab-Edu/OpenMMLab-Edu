@@ -2,8 +2,6 @@ import os
 import json
 import mmcv
 import time
-import onnx
-from onnx import load_model
 from mmcv import Config
 from mmdet.apis import inference_detector, init_detector, show_result_pyplot, train_detector
 from mmdet.models import build_detector
@@ -14,6 +12,9 @@ import warnings
 import torch
 import numpy as np
 import cv2
+import sys
+sys.path.append("..")
+from ..version import __version__
 
 warnings.filterwarnings("ignore")
 
@@ -79,6 +80,11 @@ class MMDetection:
               Frozen_stages=1,
               checkpoint=None, batch_size=None):
 
+        is_cuda  = torch.cuda.is_available()
+        if device == 'cpu' and is_cuda:
+            print("You can use  'device=cuda' to accelerate !")
+        elif device == 'cuda' and not is_cuda:
+            raise Exception("Error Code: -301. Your device doesn't support cuda.")
         # 加载网络模型的配置文件
         self.cfg = Config.fromfile(self.backbonedict[self.backbone])
 
@@ -123,7 +129,6 @@ class MMDetection:
         # 创建工作目录
         mmcv.mkdir_or_exist(os.path.abspath(self.cfg.work_dir))
         # 创建分类器
-        print(self.cfg.data.train,"++++++++++++++++++++++++++")
         datasets = [build_dataset(self.cfg.data.train)]
         model = build_detector(self.cfg.model, train_cfg=self.cfg.get(
             'train_cfg'), test_cfg=self.cfg.get('test_cfg'))
@@ -156,24 +161,31 @@ class MMDetection:
             self.cfg.data.samples_per_gpu = batch_size
 
         meta_info = {
-            'tool':'MMEdu', 
+            'tool':'MMEdu'+__version__,
             'task':'Detection',
-            'backbone':self.backbone, 
+            'backbone':self.backbone,
             'device':device,
             'dataset_size':len(datasets[0]),
             'learning_rate':lr
         }
-
+        t = time.strftime('%Y%m%d_%H%M%S', time.localtime())
         train_detector(
             model,
             datasets,
             self.cfg,
             distributed=distributed,
             validate=validate,
-            timestamp=time.strftime('%Y%m%d_%H%M%S', time.localtime()),
+            timestamp=t,
             meta=meta_info
         )
-
+        file = open(os.path.join(self.save_fold ,str(t)+".log.json"), 'r') 
+        log = []
+        import ast 
+        for i in file.readlines():
+            d = ast.literal_eval(i.rstrip('\n'))
+            log.append(d)
+        return log
+    
     def print_result(self, res=None):
         if self.is_sample == True:
             print("示例检测结果如下：")
@@ -186,6 +198,14 @@ class MMDetection:
 
     def load_checkpoint(self, checkpoint=None, device='cpu',
                         rpn_threshold=0.7, rcnn_threshold=0.7):
+        if device not in ['cpu','cuda']:
+            info = "Error Code: -301. No such argument: "+ device
+            raise Exception(info)
+        is_cuda  = torch.cuda.is_available()
+        if device == 'cpu' and is_cuda:
+            print("You can use  'device=cuda' to accelerate !")
+        elif device == 'cuda' and not is_cuda:
+            raise Exception("Error Code: -301. Your device doesn't support cuda.")
         print("========= begin inference ==========")
         if self.num_classes != -1 and self.backbone not in ["Yolov3", "SSD_Lite"]:
             self.cfg.model.roi_head.bbox_head.num_classes = self.num_classes
@@ -221,7 +241,8 @@ class MMDetection:
             print("请先使用load_checkpoint()方法加载权重！")
             return
         result = inference_detector(self.infer_model, img_array)  # 此处的model和外面的无关,纯局部变量
-        self.infer_model.show_result(image, result, show=show,
+        if show == True:
+            self.infer_model.show_result(image, result, show=show,
                                      out_file=os.path.join(save_fold, os.path.split(image)[1]))
         chinese_res = []
         for i in range(len(result)):
@@ -314,7 +335,7 @@ class MMDetection:
                 model, img_array)  # 此处的model和外面的无关,纯局部变量
             if show == True:
                 show_result_pyplot(model, image, result)
-            model.show_result(image, result, show=show, out_file=os.path.join(save_fold, os.path.split(image)[1]))
+                model.show_result(image, result, show=show, out_file=os.path.join(save_fold, os.path.split(image)[1]))
             chinese_res = []
             for i in range(len(result)):
                 for j in range(result[i].shape[0]):
@@ -336,7 +357,8 @@ class MMDetection:
             for i, img in enumerate(tqdm(os.listdir(img_dir))):
                 result = inference_detector(
                     model, img_dir + img)  # 此处的model和外面的无关,纯局部变量
-                model.show_result(img_dir + img, result,
+                if show == True:
+                    model.show_result(img_dir + img, result,
                                   out_file=os.path.join(save_fold, img))
                 chinese_res = []
                 for i in range(len(result)):
@@ -392,8 +414,10 @@ class MMDetection:
         return classes
 
     def convert(self, checkpoint=None, backend="ONNX", out_file="convert_model.onnx", device='cpu'):
+        import onnx
+        from onnx import load_model
         import os.path as osp
-        from mmdet.core.export import build_model_from_cfg
+        # from mmdet.core.export import build_model_from_cfg
 
         ashape = self.cfg.test_pipeline[1].img_scale
         if len(ashape) == 1:
@@ -460,12 +484,12 @@ class MMDetection:
                 do_simplify=False)
         else:
             print("Sorry, we only suport ONNX up to now.")
-
         classes_list = torch.load(checkpoint, map_location=torch.device('cpu'))['meta']['CLASSES']
         onnx_model = load_model(out_file)
-        unicode_string = '|'.join([name for name in classes_list])
-        class_name_metadata = onnx.StringStringEntryProto(key='CLASSES', value=unicode_string)
-        onnx_model.metadata_props.append(class_name_metadata)
+        model_info = {'codebase': 'MMDet', 'modelname': self.backbone, 'classes':classes_list}
+        unicode_string = json.dumps(model_info)
+        model_info_metadata = onnx.StringStringEntryProto(key='MODEL_INFO', value=unicode_string)
+        onnx_model.metadata_props.append(model_info_metadata)
         inputs = onnx_model.graph.input
         name_to_input = {}
         for input in inputs:
@@ -479,53 +503,22 @@ class MMDetection:
         onnx.save(onnx_model, out_file)
 
         with open(out_file.replace(".onnx", ".py"), "w+") as f:
-            tp = str(self.cfg.test_pipeline).replace("},", "},\n\t")
-            # if class_path != None:
-            #     classes_list = self.get_class(class_path)
-
-
             gen0 = """
-import onnxruntime as rt
 import cv2
-from BaseDT.data_image import ImageData
-from BaseDT.plot import imshow_det_bboxes
-
+import BaseDeploy as bd
+model_path = '
+"""
+            gen1 = """'
 cap = cv2.VideoCapture(0)
-ret_flag,image = cap.read()
+ret, img = cap.read()
+model = bd(model_path)
+result = model.inference(img)
+print(result)
 cap.release()
-"""
-            gen_sz = """
-class_names = 
-"""
-            gen1 = """
-sess = rt.InferenceSession('
-"""
-            gen2 = """', None)
-input_name = sess.get_inputs()[0].name
-output_names = [o.name for o in sess.get_outputs()]
-dt = ImageData(image, backbone="
-"""
+            """
 
-            gen3 = """")
-input_data = dt.to_tensor()
-pred_onx = sess.run(output_names, {input_name: input_data})
-boxes = pred_onx[0][0]
-labels = pred_onx[1][0]
-
-imshow_det_bboxes(img, bboxes = boxes,labels = labels, class_names = class_names, score_thr = 0.8) #根据需求修改阈值score_thr
-
-"""
-            ashape = self.cfg.test_pipeline[1].img_scale
-            # if class_path != None:
-            gen = gen0.strip("\n") + '\n' + gen_sz.replace('sz_h', str(ashape[0])).replace('sz_w',
-                                                                                           str(ashape[1])).strip(
-                '\n') + str(classes_list) + "\n" + gen1.strip("\n") + out_file + gen2.strip("\n") + str(
-                self.backbone) + gen3
-            # else:
-            #     gen = gen0.strip("tag = \n") + "\n\n" + gen1.strip("\n")+out_file+ gen2.strip("\n") + str(self.backbone) + gen3.replace("tag[labels[idx]]", "labels[idx]")
+            gen = gen0.strip('\n') + out_file + gen1.strip('\n')
             f.write(gen)
-
-
 def parse_normalize_cfg(test_pipeline):
     transforms = None
     for pipeline in test_pipeline:
