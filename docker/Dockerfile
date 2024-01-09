@@ -18,10 +18,9 @@ RUN apt-get update && apt-get install -y ffmpeg libsm6 libxext6 git ninja-build 
 
 # Install Tools
 RUN pip install --no-cache-dir --upgrade pip wheel setuptools
-RUN pip install --no-cache-dir mmcv-full==1.4.6 -f https://download.openmmlab.com/mmcv/dist/cu101/torch1.8/index.html
-RUN pip install --no-cache-dir mmcls==0.24.1
-RUN pip install --no-cache-dir mmdet==2.25.2
+RUN pip install --no-cache-dir mmcv-full==1.4.5 -f https://download.openmmlab.com/mmcv/dist/cu101/torch1.8/index.html
+RUN pip install --no-cache-dir mmcls==0.20.0 matplotlib<=3.3.1 tqdm==4.64.0 opencv-python>=4.1.2.30
 RUN pip install --no-cache-dir mmsegmentation==0.29.1
-RUN pip install --no-cache-dir MMEdu==0.0.7
-RUN pip install --no-cache-dir BaseML==0.0.1
-RUN pip install --no-cache-dir BaseNN==0.0.2
+RUN pip install --no-cache-dir MMEdu==0.1.25 --no-deps
+RUN pip install --no-cache-dir baseml basenn basedt basedeploy
+RUN pip install --no-cache-dir mmdet==2.23.0 easy-xedu onnx==1.13.0 onnxsim==0.4.10 onnxruntime==1.13.1 protobuf seaborn siot pinpong unihiker jieba tqdm yellowbrick pywebio mmpose==0.23.0 numpy==1.23.0 mediapipe==0.10.0 gradio==3.39.0 remi pysimplegui pysimpleguiweb pyautogui wordcloud pypinyin xedu-python
