@@ -1,0 +1,13 @@
+Metadata-Version: 2.1
+Name: MMEdu
+Version: 0.1.28
+Summary: MMEdu originates from the domestic artificial intelligence visual algorithm integration framework OpenMMLab, and is a "out of the box" deep learning development tool.
+Home-page: https://github.com/OpenXLab-Edu/OpenMMLab-Edu
+Author: OpenXLab
+Author-email: wangbolun@pjlab.org.cn
+License: MIT License
+Platform: UNKNOWN
+Requires-Python: >=3.6
+
+UNKNOWN
+

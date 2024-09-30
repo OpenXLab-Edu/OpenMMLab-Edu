@@ -1,0 +1,4 @@
+include whl/*
+prune demo
+include install_requires.txt
+include MMEdu/Detection/demo/*

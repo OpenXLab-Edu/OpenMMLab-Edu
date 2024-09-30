@@ -1,0 +1,11 @@
+mmcv-full==1.4.5
+mmcls==0.20.0
+mmdet==2.23.0
+torch==1.8.1
+torchvision==0.9.1
+matplotlib<=3.3.1
+tqdm==4.64.0
+opencv-python>=4.1.2.30
+onnx
+onnxruntime
+protobuf
